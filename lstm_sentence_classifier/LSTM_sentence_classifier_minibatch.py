@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import sentiment_dataset
+import hate_dataset
 import os
 import random
 torch.set_num_threads(8)
@@ -55,9 +55,9 @@ def train():
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
-    train_iter, dev_iter = sentiment_dataset.load_ed(text_field, label_field, batch_size=BATCH_SIZE)
+    train_iter, dev_iter = hate_dataset.load_HD(text_field, label_field, batch_size=BATCH_SIZE)
 
-    text_field.vocab.load_vectors('glove.6B.100d')
+    text_field.vocab.load_vectors('glove.twitter.27B.100d')
     #text_field.vocab.load_vectors(wv_type='glove.6B', wv_dim=100)
 
     best_dev_acc = 0.0
@@ -79,9 +79,9 @@ def train():
         # test_acc = evaluate(model, test_iter, loss_function,'test')
         if dev_acc > best_dev_acc:
             best_dev_acc = dev_acc
-            os.system('rm best_models/instaEmotions_best_model_minibatch_acc_*.model')
+            os.system('rm best_models/hate_annotated_best_model_minibatch_acc_*.model')
             print('New Best Dev!!! '  + str(best_dev_acc))
-            torch.save(model.state_dict(), 'best_models/instaEmotions_best_model_minibatch_acc_' + str(int(dev_acc*100)) + '.model')
+            torch.save(model.state_dict(), 'best_models/hate_annotated_best_model_minibatch_acc_' + str(int(dev_acc*100)) + '.model')
             no_up = 0
         else:
             no_up += 1

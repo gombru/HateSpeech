@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import sentiment_dataset_onesplit
+import hate_dataset_test
 import os
 import random
 import numpy as np
@@ -18,10 +18,10 @@ import torch.utils.data as Data
 
 out_file_name = 'test'
 split = 'test'
-out_file = open("../../datasets/EmotionDataset/lstm_gt/" + out_file_name + ".txt",'w')
-out_file_classification = open("../../datasets/EmotionDataset/lstm_gt/" + out_file_name + "_classification.txt",'w')
+out_file = open("../../datasets/HateSPic/lstm_emeddings/" + out_file_name + ".txt",'w')
+out_file_classification = open("../../datasets/HateSPic/lstm_embeddings/" + out_file_name + "_classification.txt",'w')
 
-emotions = ['amusement', 'anger', 'awe', 'contentment', 'disgust', 'excitement', 'fear', 'sadness']
+classes =['hate','nonhate']
 
 class LSTMClassifier(nn.Module):
 
@@ -57,16 +57,16 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = './best_models/ed_noisy_best_model_minibatch_acc_63.model'
+    model_path = './best_models/hate_annotated_best_model_minibatch_acc_63.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50
     BATCH_SIZE = 1
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
     id_field = data.Field()
-    split_iter = sentiment_dataset_onesplit.load_ed(text_field, label_field, id_field, batch_size=BATCH_SIZE, split = split)
+    split_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE, split = split)
 
-    text_field.vocab.load_vectors('glove.6B.100d')
+    text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
     model = LSTMClassifier(embedding_dim=EMBEDDING_DIM, hidden_dim=HIDDEN_DIM,
                            vocab_size=len(text_field.vocab),label_size=len(label_field.vocab)-1,
@@ -111,7 +111,7 @@ def evaluate(model, split_iter):
         for d in embedding:
             embeddingString += ',' + str(d)
 
-        gt_label = emotions.index(label_text)
+        gt_label = classes.index(label_text)
         predicted_label = pred.data.max(1)[1].numpy()
         cur_correct = 0
         if label.data[0] == predicted_label:

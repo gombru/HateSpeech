@@ -27,7 +27,7 @@ def clean_str(string):
     return string.strip()
 
 
-class ED(data.Dataset):
+class HD(data.Dataset):
 
     @staticmethod
     def sort_key(ex):
@@ -48,34 +48,16 @@ class ED(data.Dataset):
         if examples is None:
             path = self.dirname if path is None else path
             examples = []
-            with codecs.open(os.path.join(path, 'captions.amusement'),'r','utf8') as f:
+            with codecs.open(os.path.join(path, 'tweets.hate'),'r','utf8') as f:
                 examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'amusement', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.anger'),'r','utf8') as f:
+                    data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in f]
+            with codecs.open(os.path.join(path, 'tweets.nothate'),'r','utf8') as f:
                 examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'anger', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.awe'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'awe', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.contentment'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'contentment', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.disgust'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'disgust', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.excitement'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'excitement', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.fear'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'fear', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'captions.sadness'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'sadness', line.split(',')[0]], fields) for line in f]
-        super(ED, self).__init__(examples, fields, **kwargs)
+                    data.Example.fromlist([line.split(',',1)[1], 'nothate', line.split(',')[0]], fields) for line in f]
+        super(HD, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, id_field, shuffle=True ,root='.',path="../../datasets/EmotionDataset/lstm_data/noisy/", **kwargs):
+    def splits(cls, text_field, label_field, id_field, shuffle=True ,root='.',path="../../datasets/HateSPic/lstm_data/annotated/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.
@@ -108,9 +90,9 @@ class ED(data.Dataset):
                 #cls(text_field, label_field, examples=test_examples),)
 
 # load ED dataset
-def load_ed(text_field, label_field, id_field, batch_size):
+def load_HD(text_field, label_field, id_field, batch_size):
     print('loading data')
-    train_data, dev_data = ED.splits(text_field, label_field, id_field)
+    train_data, dev_data = HD.splits(text_field, label_field, id_field)
     text_field.build_vocab(train_data, dev_data)
     label_field.build_vocab(train_data, dev_data)
     id_field.build_vocab(train_data, dev_data)

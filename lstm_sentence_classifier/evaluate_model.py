@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import sentiment_dataset_test
+import hate_dataset_test
 import os
 import random
 torch.set_num_threads(8)
@@ -49,16 +49,16 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = './best_models/ed_noisy_best_model_minibatch_acc_63.model'
+    model_path = './best_models/hate_annotated_best_model_minibatch_acc_63.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
     id_field = data.Field()
-    test_iter = sentiment_dataset_test.load_ed(text_field, label_field, id_field, batch_size=BATCH_SIZE)
+    test_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE)
 
-    text_field.vocab.load_vectors('glove.6B.100d')
+    text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
     model = LSTMClassifier(embedding_dim=EMBEDDING_DIM, hidden_dim=HIDDEN_DIM,
                            vocab_size=len(text_field.vocab),label_size=len(label_field.vocab)-1,
