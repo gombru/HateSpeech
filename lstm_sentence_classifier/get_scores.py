@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import torch
 import torch.autograd as autograd
 import torch.nn as nn
@@ -14,14 +15,12 @@ torch.set_num_threads(8)
 torch.manual_seed(1)
 random.seed(1)
 # torch.cuda.set_device(0)
-import torch.utils.data as Data
 
-out_file_name = 'test'
+out_file_name = 'lstm_scores'
 split = 'test'
-out_file = open("../../datasets/HateSPic/lstm_emeddings/" + out_file_name + ".txt",'w')
-out_file_classification = open("../../datasets/HateSPic/lstm_embeddings/" + out_file_name + "_classification.txt",'w')
+out_file = open("../../../datasets/HateSPic/twitter/" + out_file_name + ".txt",'w')
 
-classes =['hate','nonhate']
+classes =['hate','nothate']
 
 class LSTMClassifier(nn.Module):
 
@@ -57,14 +56,14 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = './best_models/hate_annotated_best_model_minibatch_acc_63.model'
+    model_path = '../../../datasets/HateSPic/lstm_models/saved_hate_annotated_hidden_50_best_model_minibatch_acc_77.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50
     BATCH_SIZE = 1
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
-    id_field = data.Field()
-    split_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE, split = split)
+    id_field = data.Field(sequential=False, use_vocab=False)
+    split_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder='twitter')
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
@@ -85,57 +84,38 @@ def test():
 def evaluate(model, split_iter):
     model.eval()
     count = 0
-    results = []
-    results_classification = []
-    correct = 0
+    results_string = ''
+
     for it in split_iter:
-        if count % 1000 == 0 : print count
+        if count % 100 == 0: print count
+        print count
         sent, label = it.text, it.label
+        text = it.dataset.examples[count].text
+        text_str = ''
+        for w in text:
+            try:
+                text_str += w.decode('utf-8') + ' '
+            except:
+                continue
         label_text = it.dataset.examples[count].label
-        # print label_text + "  " + str(label.data[0])
-        id = it.dataset.examples[count].id[0]
-        label.data.sub_(1)
-        model.batch_size = len(label.data)
+        id = it.dataset.examples[count].id
+        model.batch_size = 1
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
         pred, hidden = model(sent)
-        embedding = np.zeros(50)
-        for c,d in enumerate(hidden[0][0,0,:]):
-            embedding[c] = d.data[0]
-
-        if min(embedding) < 0:
-            embedding = embedding - min(embedding)
-        if sum(embedding) > 0:
-            embedding = embedding / np.linalg.norm(embedding)
-
-        embeddingString = ""
-        for d in embedding:
-            embeddingString += ',' + str(d)
-
         gt_label = classes.index(label_text)
         predicted_label = pred.data.max(1)[1].numpy()
-        cur_correct = 0
-        if label.data[0] == predicted_label:
-            correct+=1
-            cur_correct = 1
-
-        results_classification += id + ',' + str(cur_correct) + '\n'
-
-        results += id + "," + str(gt_label), embeddingString + '\n'
+        # print("Predicted: " + str(predicted_label) + " GT: " + str(gt_label))
+        # print text_str
+        hate_score = float(pred[0][1])
+        nothate_score = float(pred[0][0])
+        softmax_score = np.exp(hate_score) / (np.exp(hate_score) + np.exp(nothate_score))
+        results_string += id + ',' + str(softmax_score) + ',' + text_str + '\n'
         count += 1
 
-    print "Correct labels: " + str(correct) + " / " + str(count) + " --> " + str(float(correct)/count*100)
-
     print "Writing results"
-    for i,r in enumerate(results):
-        out_file.write(r)
-
-
-    for i,r in enumerate(results_classification):
-        out_file_classification.write(r)
-
+    out_file.write(results_string)
 
 test()
 out_file.close()
-out_file_classification.close()
 
 print "DONE"

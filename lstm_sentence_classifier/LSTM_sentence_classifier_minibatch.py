@@ -12,8 +12,10 @@ import random
 torch.set_num_threads(8)
 torch.manual_seed(1)
 random.seed(1)
-# torch.cuda.set_device(0)
+#torch.cuda.set_device(0)
 import torch.utils.data as Data
+
+base_path = "../../../datasets/HateSPic/lstm_models/"
 
 class LSTMClassifier(nn.Module):
 
@@ -49,8 +51,9 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def train():
+    id = 'hate_annotated_hidden_50_best_model_minibatch_acc_'
     EMBEDDING_DIM = 100
-    HIDDEN_DIM = 50
+    HIDDEN_DIM = 50 #50
     EPOCH = 100
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
@@ -65,7 +68,7 @@ def train():
     model = LSTMClassifier(embedding_dim=EMBEDDING_DIM, hidden_dim=HIDDEN_DIM,
                            vocab_size=len(text_field.vocab),label_size=len(label_field.vocab)-1,
                             batch_size=BATCH_SIZE)
-    # model.cuda()
+    #model = model.cuda()
     model.word_embeddings.weight.data = text_field.vocab.vectors
     loss_function = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr = 1e-3)
@@ -79,13 +82,14 @@ def train():
         # test_acc = evaluate(model, test_iter, loss_function,'test')
         if dev_acc > best_dev_acc:
             best_dev_acc = dev_acc
-            os.system('rm best_models/hate_annotated_best_model_minibatch_acc_*.model')
+            os.system('rm ' + base_path + id + '*.model')
             print('New Best Dev!!! '  + str(best_dev_acc))
-            torch.save(model.state_dict(), 'best_models/hate_annotated_best_model_minibatch_acc_' + str(int(dev_acc*100)) + '.model')
+            torch.save(model.state_dict(), base_path + id + str(int(dev_acc*100)) + '.model')
             no_up = 0
         else:
             no_up += 1
             if no_up >= 10:
+                print('Ending because the DEV ACC does not improve')
                 exit()
 #
 def evaluate(model, eval_iter, loss_function,  name ='dev'):

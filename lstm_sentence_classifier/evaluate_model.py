@@ -6,14 +6,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import hate_dataset_test
+import hate_dataset
 import os
 import random
 torch.set_num_threads(8)
 torch.manual_seed(1)
 random.seed(1)
-# torch.cuda.set_device(0)
+#torch.cuda.set_device(0)
 import torch.utils.data as Data
+
+base_path = "../../../datasets/HateSPic/lstm_models/"
 
 class LSTMClassifier(nn.Module):
 
@@ -49,44 +51,43 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = './best_models/hate_annotated_best_model_minibatch_acc_63.model'
+    model_path = '../../../datasets/HateSPic/lstm_models/saved_hate_annotated_hidden_50_best_model_minibatch_acc_77.model'
     EMBEDDING_DIM = 100
-    HIDDEN_DIM = 50
+    HIDDEN_DIM = 50 #50
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
-    id_field = data.Field()
-    test_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE)
+    train_iter, dev_iter = hate_dataset.load_HD(text_field, label_field, batch_size=BATCH_SIZE)
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
     model = LSTMClassifier(embedding_dim=EMBEDDING_DIM, hidden_dim=HIDDEN_DIM,
                            vocab_size=len(text_field.vocab),label_size=len(label_field.vocab)-1,
                             batch_size=BATCH_SIZE)
+
     model.word_embeddings.weight.data = text_field.vocab.vectors
     model.load_state_dict((torch.load(model_path)))
-    evaluate(model,test_iter,'test')
+    evaluate(model,dev_iter)
 
-
-def evaluate(model, test_iter,  name ='test'):
+#
+def evaluate(model, eval_iter):
     model.eval()
     avg_loss = 0.0
     truth_res = []
     pred_res = []
-    for aux in test_iter:
-        for batch in aux:
-            sent, label = batch.text, batch.label
-            label.data.sub_(1)
-            truth_res += list(label.data)
-            model.batch_size = len(label.data)
-            model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
-            pred = model(sent)
-            pred_label = pred.data.max(1)[1].numpy()
-            # pred_res += [x[0] for x in pred_label]
-            pred_res += [x for x in pred_label]
+    for batch in eval_iter:
+        sent, label = batch.text, batch.label
+        label.data.sub_(1)
+        truth_res += list(label.data)
+        model.batch_size = len(label.data)
+        model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
+        pred = model(sent)
+        pred_label = pred.data.max(1)[1].numpy()
+        # pred_res += [x[0] for x in pred_label]
+        pred_res += [x for x in pred_label]
 
+    avg_loss /= len(eval_iter)
     acc = get_accuracy(truth_res, pred_res)
-    print(name + ' acc:%g' % ( acc ))
-
+    print('val acc:%g' % (avg_loss, acc ))
 
 test()

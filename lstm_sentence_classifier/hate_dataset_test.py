@@ -11,20 +11,20 @@ def clean_str(string):
     Tokenization/string cleaning for all datasets except for SST.
     Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
     """
-    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-    string = re.sub(r"\'s", " \'s", string)
-    string = re.sub(r"\'ve", " \'ve", string)
-    string = re.sub(r"n\'t", " n\'t", string)
-    string = re.sub(r"\'re", " \'re", string)
-    string = re.sub(r"\'d", " \'d", string)
-    string = re.sub(r"\'ll", " \'ll", string)
-    string = re.sub(r",", " , ", string)
-    string = re.sub(r"!", " ! ", string)
-    string = re.sub(r"\(", " \( ", string)
-    string = re.sub(r"\)", " \) ", string)
-    string = re.sub(r"\?", " \? ", string)
-    string = re.sub(r"\s{2,}", " ", string)
-    return string.strip()
+    # string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
+    # string = re.sub(r"\'s", " \'s", string)
+    # string = re.sub(r"\'ve", " \'ve", string)
+    # string = re.sub(r"n\'t", " n\'t", string)
+    # string = re.sub(r"\'re", " \'re", string)
+    # string = re.sub(r"\'d", " \'d", string)
+    # string = re.sub(r"\'ll", " \'ll", string)
+    # string = re.sub(r",", " , ", string)
+    # string = re.sub(r"!", " ! ", string)
+    # string = re.sub(r"\(", " \( ", string)
+    # string = re.sub(r"\)", " \) ", string)
+    # string = re.sub(r"\?", " \? ", string)
+    # string = re.sub(r"\s{2,}", " ", string)
+    # return string.strip()
 
 
 class HD(data.Dataset):
@@ -48,13 +48,9 @@ class HD(data.Dataset):
         if examples is None:
             path = self.dirname if path is None else path
             examples = []
-            with codecs.open(os.path.join(path, 'tweets.hate'),'r','utf8') as f:
+            with codecs.open(os.path.join(path, 'tweets.test'),'r','utf8') as f:
                 examples += [
                     data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in f]
-            with codecs.open(os.path.join(path, 'tweets.nothate'),'r','utf8') as f:
-                examples += [
-                    data.Example.fromlist([line.split(',',1)[1], 'nothate', line.split(',')[0]], fields) for line in f]
-
         super(HD, self).__init__(examples, fields, **kwargs)
 
     @classmethod
@@ -72,39 +68,42 @@ class HD(data.Dataset):
             Remaining keyword arguments: Passed to the splits method of
                 Dataset.
         """
-        path = "../../datasets/HateSPic/lstm_data/" + split_folder + "/"
+        path = "../../../datasets/HateSPic/lstm_data/" + split_folder + "/"
         print "Split:  "  + path
         test_examples = cls(text_field, label_field, id_field, path=path, **kwargs).examples
 
         # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
-        fields = [('text', text_field), ('label', label_field) , ('id', id_field)]
+        fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
-        train_path = "../../datasets/HateSPic/lstm_data/annotated/"
+        train_path = "../../../datasets/HateSPic/lstm_data/annotated/"
         with codecs.open(os.path.join(train_path, 'tweets.hate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in f]
+                data.Example.fromlist([line, 'hate','0'], fields) for line in f]
         with codecs.open(os.path.join(train_path, 'tweets.nothate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line.split(',',1)[1], 'nothate', line.split(',')[0]], fields) for line in f]
+                data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'val_tweets.hate'), 'r', 'utf8') as f:
+            train_examples += [
+                data.Example.fromlist([line, 'hate','0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'val_tweets.nothate'), 'r', 'utf8') as f:
+            train_examples += [
+                data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
 
         #random.shuffle(test_examples)
-        print('train (for vocab initialization):',len(train_examples))
-        print('test:',len(test_examples))
+        print('num train samples (for vocab initialization):',len(train_examples))
+        print('test test samples:',len(test_examples))
         return (cls(text_field, label_field, id_field, examples=train_examples),
                 cls(text_field, label_field, id_field, examples=test_examples),)
 # load ED dataset
 def load_HD(text_field, label_field, id_field, batch_size = 1, split_folder='test'):
     print('loading data')
     train_data, test_data = HD.splits(text_field, label_field, id_field, split_folder)
-    text_field.build_vocab(train_data)
-    label_field.build_vocab(train_data)
-    id_field.build_vocab(train_data)
-
+    text_field.build_vocab(train_data, train_data)
+    label_field.build_vocab(train_data, train_data)
+    print('Size vocab: ' + str(len(text_field.vocab.itos)))
     print('building batches')
-    test_iter = data.Iterator.splits(
-        [test_data], batch_sizes=(batch_size, len(test_data)),repeat=False,
-        device = -1
-    )
+    test_iter, aux_iter = data.Iterator.splits(
+        (test_data, train_data), batch_sizes=(batch_size, batch_size, batch_size), repeat=False, shuffle=False, device = -1)
 
     return test_iter
 

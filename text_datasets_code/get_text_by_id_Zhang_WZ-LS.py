@@ -10,13 +10,6 @@ OAUTH_TOKEN = "81841533-PU84e9z6jNt1AtgHP13GnS8tRJGTMSJ3lLvMevYpE"
 OAUTH_TOKEN_SECRET = "33ySOzqucOiMCst5dZcRcbyzKPjKx7xSNp9aj7esdCFa5"
 twitter = Twython(CONSUMER_KEY, CONSUMER_SECRET, OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
 
-
-def download_save_image(url, image_path):
-    resource = urllib.urlopen(url)
-    output = open(image_path, "wb")
-    output.write(resource.read())
-    output.close()
-
 ids = []
 classes = []
 
