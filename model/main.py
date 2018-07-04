@@ -1,12 +1,13 @@
 import os
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-
 import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.models as models
 import customDataset
 import trainingFunctions as t
+import torch.nn.functional as F
+
 
 from pylab import zeros, arange, subplots, plt, savefig
 
@@ -15,13 +16,13 @@ from pylab import zeros, arange, subplots, plt, savefig
 #     and callable(models.__dict__[name]))
 
 training_id = 'HateSPic_inception_v3_bs32'
-dataset = '../../ssd2/iMaterialistFashion' # Path to dataset
-split_train = '/anns/train'
-split_val =  '/anns/validation'
+dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
+split_train = 'lstm_scores_train_hate.txt'
+split_val =  'lstm_scores_val_hate.txt'
 arch = 'inception_v3'
 ImgSize = 299
-gpus = [1]
-gpu = 1
+gpus = [0]
+gpu = 0
 workers = 12 # Num of data loading workers
 epochs = 150
 start_epoch = 0 # Useful on restarts
@@ -32,43 +33,57 @@ momentum = 0.9
 weight_decay = 1e-4
 print_freq = 500
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
-pretrained = True
 # evaluate = False # Evaluate model on validation set at start
 plot = True
 best_prec1 = 0
 aux_logits = False # To desactivate the other loss in Inception v3 (there is only one extra loss
 
-# create model
-if pretrained:
-    print("=> using pre-trained model '{}'".format(arch))
-    model = models.__dict__[arch](pretrained=True, aux_logits=aux_logits)
-else:
-    print("=> creating model '{}'".format(arch))
-    model = models.__dict__[arch]()
+
+class MyModel(nn.Module):
+
+    def __init__(self):
+
+        num_classes = 2
+        lstm_hidden_state_dim = 50
+
+        super(MyModel, self).__init__()
+        self.cnn = models.inception_v3(pretrained=False, aux_logits=False)
+
+        # Delete last fc that maps 2048 features to 1000 classes.
+        # Now the output of CNN is the 2048 features
+        del(self.cnn._modules['fc'])
+
+        # Create the linear layers that will process both the img and the txt
+        self.fc1 = nn.Linear(2048 + lstm_hidden_state_dim * 2, 2048 + lstm_hidden_state_dim * 2)
+        self.fc2 = nn.Linear(1024, 1024)
+        self.fc3 = nn.Linear(512, 512)
+        self.fc4 = nn.Linear(512, num_classes)
+
+
+    def forward(self, image, img_text, tweet):
+        x1 = self.cnn(image)
+        x2 = img_text
+        x3 = tweet
+
+        x = torch.cat((x2, x3), dim=1)
+        x = torch.cat((x1, x), dim=1)
+
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = self.fc4(x)
+
+        return x
+
+
+model = MyModel()
+
+model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
 # Edit model
 # for param in model.parameters():
 #     param.requires_grad = False # This would froze all net
-# Replace the last fully-connected layer
 # Parameters of newly constructed modules have requires_grad=True by default
-num_classes = 2
-lstm_hidden_state_dim = 50
-del(model._modules['fc'])
-# TODO: Concatenate the output with LSTM embeddings from tweet text and image text
-model.fc = nn.Linear(2048 + lstm_hidden_state_dim * 2, 2048 + lstm_hidden_state_dim * 2)
-model.fc = nn.Linear(2048 + lstm_hidden_state_dim * 2, 1024)
-model.fc = nn.Linear(1024, 1024)
-model.fc = nn.Linear(1024, num_classes)
-
-print(model)
-
-if arch.startswith('alexnet') or arch.startswith('vgg'):
-    model.features = torch.nn.DataParallel(model.features)#, device_ids=gpus)
-    model.cuda(gpu)
-else:
-    model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
-    #model = torch.nn.DataParallel(model).cuda(gpu)
-
 # define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss().cuda(gpu)
 # criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
@@ -115,11 +130,9 @@ val_loader = torch.utils.data.DataLoader(
 
 plot_data = {}
 plot_data['train_loss'] = zeros(epochs)
-plot_data['train_top1'] = zeros(epochs)
-plot_data['train_top5'] = zeros(epochs)
+plot_data['train_acc'] = zeros(epochs)
 plot_data['val_loss'] = zeros(epochs)
-plot_data['val_top1'] = zeros(epochs)
-plot_data['val_top5'] = zeros(epochs)
+plot_data['val_acc'] = zeros(epochs)
 plot_data['epoch'] = 0
 
 # if evaluate:
@@ -131,10 +144,10 @@ _, ax1 = subplots()
 ax2 = ax1.twinx()
 ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y)')
-ax2.set_ylabel('train TOP1 (b), val TOP1 (g), train TOP-5 (c), val TOP-5 (k)')
+ax2.set_ylabel('train acc (b), val acc (g)')
 ax2.set_autoscaley_on(False)
 ax1.set_ylim([0, 0.1])
-ax2.set_ylim([0, 60])
+ax2.set_ylim([0, 100])
 
 
 for epoch in range(start_epoch, epochs):
@@ -158,16 +171,14 @@ for epoch in range(start_epoch, epochs):
         'state_dict': model.state_dict(),
         'best_prec1': best_prec1,
         'optimizer' : optimizer.state_dict(),
-    }, is_best, filename = dataset +'/models/CNN/' + training_id + '_epoch_' + str(epoch) + '.pth.tar')
+    }, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '.pth.tar')
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
-        ax2.plot(it_axes[0:epoch], plot_data['train_top1'][0:epoch], 'b')
-        ax2.plot(it_axes[0:epoch], plot_data['train_top5'][0:epoch], 'c')
+        ax2.plot(it_axes[0:epoch], plot_data['train_acc'][0:epoch], 'b')
 
         ax1.plot(it_axes[0:epoch], plot_data['val_loss'][0:epoch], 'y')
-        ax2.plot(it_axes[0:epoch], plot_data['val_top1'][0:epoch], 'g')
-        ax2.plot(it_axes[0:epoch], plot_data['val_top5'][0:epoch], 'k')
+        ax2.plot(it_axes[0:epoch], plot_data['val_acc'][0:epoch], 'g')
 
         plt.title(training_id)
         plt.ion()

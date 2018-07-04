@@ -12,7 +12,7 @@ from PIL import Image
 
 # -- CONFIG --
 # tweets_data_path = '../../../datasets/HateSPic/twitter/hard/raw/hate_tweets_1.txt'
-tweets_data_path = 'tweets_all_2.txt'
+tweets_data_path = 'tweets_all_4.txt'
 min_text_length = 4
 images_dir = '../../../datasets/HateSPic/twitter/img/'
 tweets_info_dir = '../../../datasets/HateSPic/twitter/json/'

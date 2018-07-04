@@ -11,14 +11,13 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-    top1 = AverageMeter()
-    top5 = AverageMeter()
+    acc = AverageMeter()
 
     # switch to train mode
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
+    for i, (image, image_text, tweet, target) in enumerate(train_loader):
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -28,7 +27,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         target_var = torch.autograd.Variable(target).squeeze(1)
 
         # compute output
-        output = model(input_var)
+        output = model(input_var, image_text, tweet)
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
@@ -37,11 +36,10 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         one_target = torch.zeros([int(target.size()[0]), 1])
         for c in range(0,int(target.size()[0])):
             one_target[c] = (target[c] == target[c].max()).nonzero()[0].float()[0]
-        prec1, prec5 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1, 5))
+        prec1 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1))
 
         losses.update(loss.data[0], input.size(0))
-        top1.update(prec1[0], input.size(0))
-        top5.update(prec5[0], input.size(0))
+        acc.update(prec1[0], input.size(0))
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -57,14 +55,12 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                  'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                  'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
                    epoch, i, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1, top5=top5))
+                   data_time=data_time, loss=losses, acc=acc))
 
     plot_data['train_loss'][plot_data['epoch']] = losses.avg
-    plot_data['train_top1'][plot_data['epoch']] = top1.avg
-    plot_data['train_top5'][plot_data['epoch']] = top5.avg
+    plot_data['train_acc'][plot_data['epoch']] = acc.avg
 
     return plot_data
 
@@ -74,8 +70,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
         batch_time = AverageMeter()
         losses = AverageMeter()
-        top1 = AverageMeter()
-        top5 = AverageMeter()
+        acc = AverageMeter()
 
         # switch to evaluate mode
         model.eval()
@@ -99,11 +94,10 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
             one_target = torch.zeros([int(target.size()[0]), 1])
             for c in range(0,int(target.size()[0])):
                 one_target[c] = (target[c] == target[c].max()).nonzero()[0].float()[0]
-            prec1, prec5 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1, 5))
+            prec1 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1))
 
             losses.update(loss.data[0], input.size(0))
-            top1.update(prec1[0], input.size(0))
-            top5.update(prec5[0], input.size(0))
+            acc.update(prec1[0], input.size(0))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -113,25 +107,23 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
                 print('Test: [{0}/{1}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-                      'Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                      'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
                        i, len(val_loader), batch_time=batch_time, loss=losses,
-                       top1=top1, top5=top5))
+                       acc=acc))
 
-        print(' * Prec@1 {top1.avg:.3f} Prec@5 {top5.avg:.3f}'
-              .format(top1=top1, top5=top5))
+        print(' * Acc {acc.avg:.3f}'
+              .format(acc=acc))
 
         plot_data['val_loss'][plot_data['epoch']] = losses.avg
-        plot_data['val_top1'][plot_data['epoch']] = top1.avg
-        plot_data['val_top5'][plot_data['epoch']] = top5.avg
+        plot_data['val_acc'][plot_data['epoch']] = acc.avg
 
-    return plot_data, top1.avg
+    return plot_data, acc.avg
 
 
 def save_checkpoint(dataset, state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, dataset +'/models/CNN/' + 'model_best.pth.tar')
+        shutil.copyfile(filename, dataset +'/models/' + 'model_best.pth.tar')
 
 
 class AverageMeter(object):

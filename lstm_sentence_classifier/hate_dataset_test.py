@@ -33,7 +33,7 @@ class HD(data.Dataset):
     def sort_key(ex):
         return len(ex.text)
 
-    def __init__(self, text_field, label_field, id_field, path=None, train_vocab_path = None, examples=None, **kwargs):
+    def __init__(self, text_field, label_field, id_field, path=None, split_name = None, train_vocab_path = None, examples=None, **kwargs):
         """Create an Emotion Dataset instance given a path and fields.
         Arguments:
             text_field: The field that will be used for text data.
@@ -48,13 +48,15 @@ class HD(data.Dataset):
         if examples is None:
             path = self.dirname if path is None else path
             examples = []
-            with codecs.open(os.path.join(path, 'tweets.test'),'r','utf8') as f:
+            with codecs.open(os.path.join(path, split_name),'r','utf8') as f:
                 examples += [
+                    # Twitter
                     data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in f]
+
         super(HD, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, id_field, split_folder, shuffle=True ,root='.', **kwargs):
+    def splits(cls, text_field, label_field, id_field, split_folder, split_name, shuffle=True ,root='.', **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.
@@ -70,7 +72,7 @@ class HD(data.Dataset):
         """
         path = "../../../datasets/HateSPic/lstm_data/" + split_folder + "/"
         print "Split:  "  + path
-        test_examples = cls(text_field, label_field, id_field, path=path, **kwargs).examples
+        test_examples = cls(text_field, label_field, id_field, path=path, split_name=split_name, **kwargs).examples
 
         # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
@@ -95,9 +97,9 @@ class HD(data.Dataset):
         return (cls(text_field, label_field, id_field, examples=train_examples),
                 cls(text_field, label_field, id_field, examples=test_examples),)
 # load ED dataset
-def load_HD(text_field, label_field, id_field, batch_size = 1, split_folder='test'):
+def load_HD(text_field, label_field, id_field, batch_size = 1, split_folder='test', split_name = 'tweets.test'):
     print('loading data')
-    train_data, test_data = HD.splits(text_field, label_field, id_field, split_folder)
+    train_data, test_data = HD.splits(text_field, label_field, id_field, split_folder, split_name)
     text_field.build_vocab(train_data, train_data)
     label_field.build_vocab(train_data, train_data)
     print('Size vocab: ' + str(len(text_field.vocab.itos)))

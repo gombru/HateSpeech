@@ -16,9 +16,11 @@ torch.manual_seed(1)
 random.seed(1)
 # torch.cuda.set_device(0)
 
-out_file_name = 'lstm_scores'
-split = 'test'
-out_file = open("../../../datasets/HateSPic/twitter/" + out_file_name + ".txt",'w')
+target = 'test_hate'
+out_file_name = 'lstm_scores_' + target
+split_name = 'tweets.' + target
+out_file = open("../../../datasets/HateSPic/HateSPic/" + out_file_name + ".txt",'w')
+split_folder = 'HateSPic'
 
 classes =['hate','nothate']
 
@@ -63,7 +65,7 @@ def test():
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
     id_field = data.Field(sequential=False, use_vocab=False)
-    split_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder='twitter')
+    split_iter = hate_dataset_test.load_HD(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder=split_folder, split_name = split_name)
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
 

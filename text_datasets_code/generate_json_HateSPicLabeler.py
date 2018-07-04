@@ -20,22 +20,27 @@ def download_save_image(url, image_path):
     output.close()
 
 ids = []
-file = open('../../../datasets/HateSPic/hate_speech_icwsm18/indices.csv', 'r')
-dataset_name = 'SemiSupervised'
+file = open('../../../datasets/HateSPic/Zhang/wz-ls/labeled_data.csv', 'r')
+dataset_name = 'WZ-LS'
 
 out_dir = '../../../datasets/HateSPic/HateSPicLabeler/original_json/' + dataset_name + '/'
-images_dir = '../../../datasets/HateSPic/hate_speech_icwsm18/img/'
-
-
-for line in file:
-    ids.append(int(line.split(',')[0]))
-random.shuffle(ids)
+images_dir = '../../../datasets/HateSPic/Zhang/wz-ls/img/'
 
 created = 0
+created_hate = 0
+created_nothate = 0
 
-for i,id in enumerate(ids):
+lines = []
+for line in file:
+    lines.append(line)
 
-    print(str(i) + " Created: " + str(created))
+random.shuffle(lines)
+
+for i,line in enumerate(lines):
+
+    id = int(line.split(',')[0])
+
+    print(str(i) + " Created: " + str(created) + " Hate: " + str(created_hate) + " Not Hate: " + str(created_nothate))
 
     try:
         t = twitter.show_status(id=id)
@@ -73,56 +78,63 @@ for i,id in enumerate(ids):
                         print "Failed downloading image from: " + t['entities']['media'][0]['media_url']
                         continue
 
-                try:
-                    label_id = None
-                    # Get original class
+                    try:
+                        label_id = None
+                        # Get original class
 
-                    # Can't download TM tweets, they don't have ID!
-                    # if dataset_name == 'DT':
-                    #     if len(line.split(',')) < 6:
-                    #         continue
-                    #     label_id = int(line.split(',')[5])
+                        # Can't download TM tweets, they don't have ID!
+                        # if dataset_name == 'DT':
+                        #     if len(line.split(',')) < 6:
+                        #         continue
+                        #     label_id = int(line.split(',')[5])
 
-                    if dataset_name == 'WZ-LS':
-                        if len(line.split(',')) < 2:
-                            continue
-                        label_id = int(line.split(',')[1])
+                        # Can't download TM tweets, they don't have ID!
+                        # if dataset_name == 'RM':
+                        #     if len(line.split(',')) < 2:
+                        #         continue
+                        #     label_id = int(line.split(',')[0])
 
-                    # Can't download TM tweets, they don't have ID!
-                    # if dataset_name == 'RM':
-                    #     if len(line.split(',')) < 2:
-                    #         continue
-                    #     label_id = int(line.split(',')[0])
 
-                    if label_id == 0: label_id = 1 # Hate
-                    elif label_id == 2: label_id = 0 # Not hate
+                        if dataset_name == 'WZ-LS':
+                            if len(line.split(',')) < 2:
+                                continue
+                            label_id = int(line.split(',')[1])
+                            if label_id == 2:
+                                label_id = 0  # Not hate
+                            else:
+                                label_id = 1  # Hate
 
-                    if dataset_name == 'SemiSupervised':
-                        label_id = 1
 
-                    if label_id not in [0,1]:
-                        print("WARNIGN WRONG LABEL ID")
+                        if dataset_name == 'SemiSupervised':
+                            label_id = 1
 
-                    info = {}
-                    info['id'] = t['id']
-                    info['img_url'] = t['entities']['media'][0]['media_url']
-                    info['text'] = t['text'].encode("utf8", "ignore").replace('\n', ' ').replace('\r', ' ')
-                    info['dataset'] = dataset_name
-                    info['hate_votes'] = 0
-                    info['not_hate_votes'] = 0
-                    info['voters'] = 0
-                    info['HateSPiclabeler_annotation'] = None
-                    info['original_annotation'] = label_id
+                        if label_id not in [0,1]:
+                            print("WARNING WRONG LABEL ID")
 
-                    with open(out_dir + '/' + str(t['id']) + '.json', "w") as out_file:
-                        json.dump(info, out_file)
-                    created += 1
+                        if label_id == 1: created_hate+=1
+                        if label_id == 0: created_nothate+=1
 
-                except:
-                    print("Failed writing")
-                    continue
 
-    print "done"
+                        info = {}
+                        info['id'] = t['id']
+                        info['img_url'] = t['entities']['media'][0]['media_url']
+                        info['text'] = t['text'].encode("utf8", "ignore").replace('\n', ' ').replace('\r', ' ')
+                        info['dataset'] = dataset_name
+                        info['hate_votes'] = 0
+                        info['not_hate_votes'] = 0
+                        info['voters'] = 0
+                        info['HateSPiclabeler_annotation'] = None
+                        info['original_annotation'] = label_id
+
+                        with open(out_dir + '/' + str(t['id']) + '.json', "w") as out_file:
+                            json.dump(info, out_file)
+                        created += 1
+
+                    except:
+                        print("Failed writing")
+                        continue
+
+    # print "done"
 
 
 print("created: " + str(created))
