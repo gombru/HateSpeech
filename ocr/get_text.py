@@ -15,15 +15,21 @@ def make_image_data_list(image_filenames):
     """
     img_requests = []
     for imgname in image_filenames:
-        with open(imgname, 'rb') as f:
-            ctxt = b64encode(f.read()).decode()
-            img_requests.append({
-                    'image': {'content': ctxt},
-                    'features': [{
-                        'type': 'TEXT_DETECTION',
-                        'maxResults': 1
-                    }]
-            })
+        try:
+            with open(imgname, 'rb') as f:
+                ctxt = b64encode(f.read()).decode()
+                img_requests.append({
+                        'image': {'content': ctxt},
+                        'features': [{
+                            'type': 'TEXT_DETECTION',
+                            'maxResults': 1
+                        }]
+                })
+
+        except:
+            print("Image not found")
+
+
     return img_requests
 
 def make_image_data(image_filenames):
@@ -41,6 +47,7 @@ def request_ocr(api_key, image_filenames):
 
 ENDPOINT_URL = 'https://vision.googleapis.com/v1/images:annotate'
 RESULTS_DIR = '../../../datasets/HateSPic/HateSPic/img_text/txt/'
+results = {}
 # makedirs(RESULTS_DIR, exist_ok=True)
 
 api_key = 'AIzaSyB9TigeOiqzneipm-LQJUkHs_6xGd04oiM'
@@ -51,27 +58,32 @@ datasets = ['HateSPic/','SemiSupervised/','WZ-LS/']
 base_path = '../../../datasets/HateSPic/'
 
 for i,dataset in enumerate(datasets):
-    for file in os.listdir(generated_base_path + dataset):
+    for num_files, file in enumerate(os.listdir(generated_base_path + dataset)):
         id = json.load(open(generated_base_path + dataset + file, 'r'))['id']
         image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
+        if num_files == 1:
+            break
 
-response = request_ocr(api_key, image_filenames)
-if response.status_code != 200 or response.json().get('error'):
-    print(response.text)
-else:
-    for idx, resp in enumerate(response.json()['responses']):
-        # save to JSON file
-        imgname = image_filenames[idx]
-        jpath = join(RESULTS_DIR, basename(imgname) + '.json')
-        with open(jpath, 'w') as f:
-            datatxt = json.dumps(resp, indent=2)
-            print("Wrote", len(datatxt), "bytes to", jpath)
-            f.write(datatxt)
+# I do it image by image to don't fuck indices
+for cur_image_filename in image_filenames:
+    try:
+        response = request_ocr(api_key, [cur_image_filename])
+        if response.status_code != 200 or response.json().get('error'):
+            print(response.text)
+        else:
+            for idx, resp in enumerate(response.json()['responses']):
+                if len(resp) == 0: continue
+                img_txt = ""
+                for detected_element in resp['textAnnotations']: # Loop for each text detected
+                    img_txt += detected_element['description']
 
-        # print the plaintext to screen for convenience
-        print("---------------------------------------------")
-        t = resp['textAnnotations'][0]
-        print("    Bounding Polygon:")
-        print(t['boundingPoly'])
-        print("    Text:")
-        print(t['description'])
+            if len(img_txt) > 3:
+                # save to JSON file
+                save_dict = {'img_text': img_txt}
+                jpath = join(RESULTS_DIR, basename(cur_image_filename)[:-4] + '.json')
+                with open(jpath, 'w') as f:
+                    json.dump(save_dict, f)
+    except:
+        print("Error with image: " + cur_image_filename)
+
+print("DONE")
