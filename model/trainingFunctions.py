@@ -12,6 +12,10 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
     data_time = AverageMeter()
     losses = AverageMeter()
     acc = AverageMeter()
+    acc_hate = AverageMeter()
+    acc_notHate = AverageMeter()
+    acc_avg = AverageMeter()
+
 
     # switch to train mode
     model.train()
@@ -23,23 +27,26 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
         data_time.update(time.time() - end)
 
         target = target.cuda(gpu, async=True)
-        input_var = torch.autograd.Variable(input)
+        image_var = torch.autograd.Variable(image)
+        image_text_var = torch.autograd.Variable(image_text)
+        tweet_var = torch.autograd.Variable(tweet)
         target_var = torch.autograd.Variable(target).squeeze(1)
 
         # compute output
-        output = model(input_var, image_text, tweet)
+        output = model(image_var, image_text_var, tweet_var)
         loss = criterion(output, target_var)
 
         # measure accuracy and record loss
         # prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        # for multilabel, we select a random positive class to compute accuracy, and for regression the max value
-        one_target = torch.zeros([int(target.size()[0]), 1])
-        for c in range(0,int(target.size()[0])):
-            one_target[c] = (target[c] == target[c].max()).nonzero()[0].float()[0]
-        prec1 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1))
 
-        losses.update(loss.data[0], input.size(0))
-        acc.update(prec1[0], input.size(0))
+        prec1 = accuracy(output.data, target.long().cuda(gpu), topk=(1,))
+        cur_acc_hate, cur_acc_notHate = accuracy_per_class(output.data, target.long().cuda(gpu))
+        acc_hate.update(cur_acc_hate, image.size()[0])
+        acc_notHate.update(cur_acc_notHate, image.size()[0])
+        acc_avg.update((cur_acc_hate + cur_acc_notHate) / 2, image.size()[0])
+        # print image.size()[0]
+        losses.update(loss.data.item(), image.size()[0])
+        acc.update(prec1[0], image.size()[0])
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -55,12 +62,22 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                  'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
+                  'Acc {acc.val.data[0]:.3f} ({acc.avg.data[0]:.3f})\t'
+                  'Acc Hate {acc_hate.val:.3f} ({acc_hate.avg:.3f})\t'
+                  'Acc NotHate {acc_notHate.val:.3f} ({acc_notHate.avg:.3f})\t'
+                  'Acc Avg {acc_avg.val:.3f} ({acc_avg.avg:.3f})\t'.format(
                    epoch, i, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, acc=acc))
+                   data_time=data_time, loss=losses, acc=acc, acc_hate=acc_hate, acc_notHate=acc_notHate, acc_avg=acc_avg))
+
+    print('TRAIN: Acc: ' + str(acc.avg.data[0].item()) + 'Acc Avg: ' + str(acc_avg.avg) + ' Hate Acc: ' + str(acc_hate.avg) + ' - Not Hate Acc: ' + str(
+        acc_notHate.avg))
 
     plot_data['train_loss'][plot_data['epoch']] = losses.avg
     plot_data['train_acc'][plot_data['epoch']] = acc.avg
+    plot_data['train_acc_hate'][plot_data['epoch']] = acc_hate.avg
+    plot_data['train_acc_notHate'][plot_data['epoch']] = acc_notHate.avg
+    plot_data['train_acc_avg'][plot_data['epoch']] = acc_avg.avg
+
 
     return plot_data
 
@@ -71,33 +88,38 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
         batch_time = AverageMeter()
         losses = AverageMeter()
         acc = AverageMeter()
+        acc_hate = AverageMeter()
+        acc_notHate = AverageMeter()
+        acc_avg = AverageMeter()
 
         # switch to evaluate mode
         model.eval()
 
         end = time.time()
-        for i, (input, target) in enumerate(val_loader):
-            target = target.cuda(gpu, async=True)
-            input_var = torch.autograd.Variable(input)
-            target_var = torch.autograd.Variable(target).squeeze(1) # Needed because we need a 1-dimension vector
+        for i, (image, image_text, tweet, target) in enumerate(val_loader):
 
-            # test_target = torch.autograd.Variable(torch.LongTensor(3).random_(5).long())
-            # output_test = torch.autograd.Variable(torch.randn(3, 7), requires_grad=True)
+            target = target.cuda(gpu, async=True)
+            image_var = torch.autograd.Variable(image)
+            image_text_var = torch.autograd.Variable(image_text)
+            tweet_var = torch.autograd.Variable(tweet)
+            target_var = torch.autograd.Variable(target).squeeze(1)
+
 
             # compute output
-            output = model(input_var)
+            output = model(image_var, image_text_var, tweet_var)
             loss = criterion(output, target_var)
 
             # measure accuracy and record loss
             # prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-            # for multilabel, we select a random positive class to compute accuracy, and for regression the max value
-            one_target = torch.zeros([int(target.size()[0]), 1])
-            for c in range(0,int(target.size()[0])):
-                one_target[c] = (target[c] == target[c].max()).nonzero()[0].float()[0]
-            prec1 = accuracy(output.data, one_target.long().cuda(gpu), topk=(1))
 
-            losses.update(loss.data[0], input.size(0))
-            acc.update(prec1[0], input.size(0))
+            prec1 = accuracy(output.data, target.long().cuda(gpu), topk=(1,))
+            cur_acc_hate, cur_acc_notHate = accuracy_per_class(output.data, target.long().cuda(gpu))
+            acc_hate.update(cur_acc_hate, image.size()[0])
+            acc_notHate.update(cur_acc_notHate, image.size()[0])
+            acc_avg.update((cur_acc_hate + cur_acc_notHate) / 2, image.size()[0])
+
+            losses.update(loss.data.item(), image.size()[0])
+            acc.update(prec1[0], image.size()[0])
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -107,17 +129,23 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
                 print('Test: [{0}/{1}]\t'
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-                      'Acc {acc.val:.3f} ({acc.avg:.3f})'.format(
+                      'Acc {acc.val.data[0]:.3f} ({acc.avg.data[0]:.3f})'
+                      'Acc Hate {acc_hate.val:.3f} ({acc_hate.avg:.3f})\t'
+                      'Acc NotHate {acc_notHate.val:.3f} ({acc_notHate.avg:.3f})\t'
+                      'Acc Avg {acc_avg.val:.3f} ({acc_avg.avg:.3f})\t'.format(
                        i, len(val_loader), batch_time=batch_time, loss=losses,
-                       acc=acc))
+                       acc=acc, acc_hate=acc_hate, acc_notHate=acc_notHate, acc_avg=acc_avg))
 
-        print(' * Acc {acc.avg:.3f}'
-              .format(acc=acc))
+        print('VALIDATION: Acc: ' + str(acc.avg.data[0].item()) + 'Acc Avg: ' + str(acc_avg.avg) + ' Hate Acc: ' + str(acc_hate.avg) + ' - Not Hate Acc: ' + str(acc_notHate.avg ))
 
         plot_data['val_loss'][plot_data['epoch']] = losses.avg
         plot_data['val_acc'][plot_data['epoch']] = acc.avg
+        plot_data['val_acc_hate'][plot_data['epoch']] = acc_hate.avg
+        plot_data['val_acc_notHate'][plot_data['epoch']] = acc_notHate.avg
+        plot_data['val_acc_avg'][plot_data['epoch']] = acc_avg.avg
 
-    return plot_data, acc.avg
+
+    return plot_data
 
 
 def save_checkpoint(dataset, state, is_best, filename='checkpoint.pth.tar'):
@@ -172,3 +200,33 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+
+def accuracy_per_class(output, target):
+    _, pred = output.topk(1, 1, True, True)
+    pred = pred.t()
+
+    correct_hate = 0
+    correct_notHate = 0
+    total_hate = 0
+    total_notHate = 0
+    pred = pred[0]
+
+    for i, cur_target in enumerate(target):
+
+        if cur_target == 1:
+            total_hate += 1
+            if cur_target == pred[i]: correct_hate += 1
+        else:
+            total_notHate += 1
+            if cur_target == pred[i]: correct_notHate += 1
+
+    if total_hate == 0 : total_hate = 1
+    if total_notHate == 0 : total_notHate = 1
+
+    acc_hate = 100 * float(correct_hate) / total_hate
+    acc_notHate = 100 * float(correct_notHate) / total_notHate
+
+
+    return acc_hate, acc_notHate
+

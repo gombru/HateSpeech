@@ -46,7 +46,7 @@ def request_ocr(api_key, image_filenames):
     return response
 
 ENDPOINT_URL = 'https://vision.googleapis.com/v1/images:annotate'
-RESULTS_DIR = '../../../datasets/HateSPic/HateSPic/img_text/txt/'
+RESULTS_DIR = '../../../datasets/HateSPic/HateSPic/img_text/'
 results = {}
 # makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -60,12 +60,14 @@ base_path = '../../../datasets/HateSPic/'
 for i,dataset in enumerate(datasets):
     for num_files, file in enumerate(os.listdir(generated_base_path + dataset)):
         id = json.load(open(generated_base_path + dataset + file, 'r'))['id']
-        image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
-        if num_files == 1:
-            break
+        # If img_txt file already exists, skip
+        if not os.isfile(RESULTS_DIR + str(id) + '.json'):
+            image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
+
 
 # I do it image by image to don't fuck indices
-for cur_image_filename in image_filenames:
+for count, cur_image_filename in enumerate(image_filenames):
+    print count
     try:
         response = request_ocr(api_key, [cur_image_filename])
         if response.status_code != 200 or response.json().get('error'):

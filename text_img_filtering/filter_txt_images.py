@@ -14,7 +14,7 @@ caffe.set_mode_gpu()
 
 
 twitter = True # If filtering fromt twitter also consider LSTM scores
-lstm_filtering_probability = 0 # The probability that the LSTM filtering is not applied. I want to let in some "random" images
+lstm_filtering_probability = 5 # The probability that the LSTM filtering is not applied. I want to let in some "random" images
 lstm_scores_path = '../../../datasets/HateSPic/twitter/lstm_scores.txt'
 lstm_th = 0.5
 white_img_th = 150 # A less permisive text thereshold is applied to them
@@ -24,7 +24,7 @@ txt_th = 0.3
 
 #Compute heatmaps from images in txt
 img_dir = '../../../datasets/HateSPic/twitter/img/'
-json_dir = '../../../datasets/HateSPic/twitter/json/'
+json_dir = '../../../datasets/HateSPic/twitter/json_2/'
 out_json_dir = '../../../datasets/HateSPic/HateSPicLabeler/filtered_original_json/HateSPic/'
 out_dir = '../../../datasets/HateSPic/twitter/txt_img_fitlered/'
 discarded_dir = '../../../datasets/HateSPic/twitter/txt_img_discarded/'
@@ -43,7 +43,7 @@ if twitter:
 
 
 img_paths = []
-for file in os.listdir(img_dir): img_paths.append(img_dir + file)
+for file in os.listdir(json_dir): img_paths.append(img_dir + file.replace('.json','.jpg'))
 
 # load net
 net = caffe.Net('deploy.prototxt', '../../../datasets/COCO-Text/fcn8s-atonce.caffemodel', caffe.TEST)

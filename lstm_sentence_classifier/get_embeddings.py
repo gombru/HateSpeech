@@ -16,11 +16,11 @@ torch.manual_seed(1)
 random.seed(1)
 # torch.cuda.set_device(0)
 
-target = 'test'
-out_file_name = 'lstm_scores'
+target = 'img_text'
 split_name = 'tweets.' + target
-out_file = open("../../../datasets/HateSPic/twitter/" + out_file_name + ".txt",'w')
-split_folder = 'twitter'
+out_file_name = 'img_txt_embeddings/lstm_embeddings_' + target
+out_file = open("../../../datasets/HateSPic/HateSPic/" + out_file_name + ".txt",'w')
+split_folder = 'img_txt'
 
 classes =['hate','nothate']
 
@@ -90,6 +90,7 @@ def evaluate(model, split_iter):
 
     for it in split_iter:
         if count % 100 == 0: print count
+        print count
         sent, label = it.text, it.label
         text = it.dataset.examples[count].text
         text_str = ''
@@ -103,14 +104,17 @@ def evaluate(model, split_iter):
         model.batch_size = 1
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
         pred, hidden = model(sent)
-        gt_label = classes.index(label_text)
-        predicted_label = pred.data.max(1)[1].numpy()
-        # print("Predicted: " + str(predicted_label) + " GT: " + str(gt_label))
-        # print text_str
-        hate_score = float(pred[0][1])
-        nothate_score = float(pred[0][0])
-        softmax_score = np.exp(hate_score) / (np.exp(hate_score) + np.exp(nothate_score))
-        results_string += id + ',' + str(softmax_score) + ',' + text_str + '\n'
+
+
+        # Get embedding stre
+        embedding = np.zeros(50)
+        for c,d in enumerate(hidden[0][0,0,:]):
+            embedding[c] = d.data[0]
+        embeddingString = ""
+        for d in embedding:
+            embeddingString += ',' + str(d)
+
+        results_string += id + embeddingString + '\n'
         count += 1
 
     print "Writing results"

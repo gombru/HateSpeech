@@ -28,10 +28,21 @@ def Rescale(im, output_size):
 
 def RandomCrop(im, output_size):
 
-    width, height = im.size
-    left = random.randint(0, width - output_size - 1)
-    top = random.randint(0, height - output_size - 1)
-    im = im.crop((left, top, left + output_size, top + output_size))
+    # Handle small images
+    try:
+        width, height = im.size
+        if width < output_size -1:
+            im = im.resize((width * 2, height * 2), Image.ANTIALIAS)
+
+        if height < output_size -1:
+            im = im.resize((width * 2, height * 2), Image.ANTIALIAS)
+
+        width, height = im.size
+        left = random.randint(0, width - output_size - 1)
+        top = random.randint(0, height - output_size - 1)
+        im = im.crop((left, top, left + output_size, top + output_size))
+    except:
+        im = Rescale(im,output_size)
     return im
 
 def CenterCrop(im, crop_size, output_size):

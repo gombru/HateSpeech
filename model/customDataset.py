@@ -28,65 +28,75 @@ class CustomDataset(Dataset):
         self.Rescale = Rescale
         self.RandomCrop = RandomCrop
         self.Mirror = Mirror
-        self.num_classes = 228
+        self.hidden_state_dim = 50
 
-        # split_f  = '{}/{}.txt'.format(root_dir, split)
-        # self.indices = open(split_f, 'r').read().splitlines()
+        # Count number of elements
+        num_elements = sum(1 for line in open(root_dir + 'tweet_embeddings/' + split))
+        num_elements += sum(1 for line in open(root_dir + 'tweet_embeddings/' + split.replace('hate','nothate')))
+        print("Number of elements in " + split + " (and not hate): " + str(num_elements))
 
-        # Simple Classification (class index)
-        # self.labels = [int(i.split(',', 1)[1]) for i in self.indices]
+        # Initialize containers
+        self.tweet_ids = np.empty(num_elements, dtype="S50")
+        self.labels = []
+        self.tweets = np.zeros((num_elements, self.hidden_state_dim), dtype=np.float32)
+        self.img_texts = np.zeros((num_elements, self.hidden_state_dim), dtype=np.float32)
 
-        # Multilabel / Regression
-        # self.labels = []
-        # num_classes = 5
-        # for i in self.indices:
-        #     data = i.split(',')
-        #     cur_label = np.zeros(num_classes)
-        #     for c in range(0, num_classes):
-        #         cur_label[c] = float(data[c+1])
-        #     self.labels.append(cur_label)
+        # Read image text embeddings
+        img_txt_embeddings = {}
+        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/lstm_embeddings_img_text.txt')):
+            data_img_text = line.split(',')
+            embedding = np.zeros(self.hidden_state_dim)
+            for c in range(self.hidden_state_dim):
+                embedding[c] = float(data_img_text[c+1])
+            img_txt_embeddings[int(data_img_text[0])] = embedding
+        print("Img text embeddings read. Total elements: " + str(len(img_txt_embeddings)))
 
-        # Save image names
-        # self.indices = [i.split(',', 1)[0] for i in self.indices]
-        # print("Num images in " + split + " --> " + str(len(self.indices)))
 
-        # iMaterialist
-        with open(root_dir + split + '.json', 'r') as f:
-            data = json.load(f)
-        num_elements = len(data["annotations"])
-        #num_elements = 9001
-        print("Number of images: " + str(num_elements))
+        # Read Hate data
+        for i,line in enumerate(open(root_dir + 'tweet_embeddings/' + split)):
+            data = line.split(',')
+            self.tweet_ids[i] = data[0] # id
+            # if 'val' in split:
+            #     print('val')
+            #     self.labels.append(0)
+            # else:
+            self.labels.append(1) # Assign hate label
+            for c in range(self.hidden_state_dim): # Read LSTM hidden state
+                self.tweets[i,c] = float(data[c+1])
+            # Read img_text embedding
+            if data[0] in img_txt_embeddings:
+                self.img_texts[i,:] = img_txt_embeddings[data[0]]
+            offset = i + 1
 
-        # Load labels for multiclass
-        self.indices = np.empty([num_elements], dtype="S50")
-        self.labels = np.zeros((num_elements, self.num_classes), dtype=np.float32)
 
-        for c, image in enumerate(data["annotations"]):
-            gt_labels = image["labelId"]
-            self.indices[c] = image["imageId"]
-            for l in gt_labels:
-                self.labels[c, int(l) - 1] = 1
-            if c % 100000 == 0: print("Read " + str(c) + " / " + str(num_elements))
-            #if c == 9000: break
-        print("Labels read.")
+        # Read Not Hate data
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/' + split.replace('hate','nothate'))):
+            data = line.split(',')
+            self.tweet_ids[i + offset] = data[0] # id
+            self.labels.append(0) # Assign not hate label
+            for c in range(self.hidden_state_dim): # Read LSTM hidden state
+                self.tweets[i + offset,c] = float(data[c+1])
+            # Read img_text embedding
+            if data[0] in img_txt_embeddings:
+                self.img_texts[i + offset,:] = img_txt_embeddings[data[0]]
+
+        print("Data read.")
 
 
     def __len__(self):
-        return len(self.indices)
+        return len(self.tweet_ids)
 
 
     def __getitem__(self, idx):
-        # img_name = self.root_dir + '/img_resized_1M/cities_instagram/' + self.indices[idx] + '.jpg'
-        if self.split == '/anns/validation':
-            img_name = '{}/{}/{}{}'.format(self.root_dir , 'img_val', self.indices[idx], '.jpg')
-        else:
-            img_name = '{}/{}/{}{}'.format(self.root_dir , 'img', self.indices[idx], '.jpg')
+
+        img_name = '{}{}/{}{}'.format(self.root_dir, 'img', self.tweet_ids[idx], '.jpg')
+
         try:
             image = Image.open(img_name)
             # print("FOUND " + img_name)
         except:
+            img_name = '../../../datasets/HateSPic/HateSPic/img/1011278006608912384.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + img_name)
-            img_name = '../../datasets/SocialMedia/img_resized_1M/cities_instagram/london/1481255189662056249.jpg'
             image = Image.open(img_name)
 
         try:
@@ -107,22 +117,25 @@ class CustomDataset(Dataset):
             im_np = customTransform.PreprocessImage(im_np)
 
         except:
-            print("Error on data aumentation, using hardcoded")
-            img_name = self.root_dir + '/img_resized_1M/cities_instagram/london/1481255189662056249.jpg'
+            img_name = '../../../datasets/HateSPic/HateSPic/img/1011278006608912384.jpg'
+            print("Error on data aumentation, using hardcoded: " + img_name)
             image = Image.open(img_name)
             if self.RandomCrop != 0:
                 image = customTransform.RandomCrop(image,self.RandomCrop)
+            if self.Rescale != 0:
+                image = customTransform.Rescale(image,self.Rescale)
             im_np = np.array(image, dtype=np.float32)
             im_np = customTransform.PreprocessImage(im_np)
 
         out_img = np.copy(im_np)
 
         # Simple Classification (class index)
-        # label = torch.from_numpy(np.array([int(self.labels[idx])]))
-        # label = label.type(torch.LongTensor)
+        label = torch.from_numpy(np.array([int(self.labels[idx])]))
+        label = label.type(torch.LongTensor)
 
         # Multilabel / Regression
-        label = torch.from_numpy(np.array(self.labels[idx]))
-        label = label.type(torch.FloatTensor)
+        img_text = torch.from_numpy(np.array(self.img_texts[idx]))
+        tweet = torch.from_numpy(np.array(self.tweets[idx]))
+        # print(out_img.shape)
 
-        return torch.from_numpy(out_img), label
+        return torch.from_numpy(out_img), img_text, tweet, label

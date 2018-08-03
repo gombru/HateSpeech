@@ -49,9 +49,14 @@ class HD(data.Dataset):
             path = self.dirname if path is None else path
             examples = []
             with codecs.open(os.path.join(path, split_name),'r','utf8') as f:
-                examples += [
-                    # Twitter
-                    data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in f]
+                lines = []
+                for line in f:
+                    if len(line.split(',')) >= 2:
+                        lines.append(line)
+
+            examples += [
+                # Twitter
+                data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in lines]
 
         super(HD, self).__init__(examples, fields, **kwargs)
 
