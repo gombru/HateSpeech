@@ -1,48 +1,44 @@
 import torch
 import customDatasetTest
-import torchvision.models as models
-import torch.nn as nn
 import os
-import torch.backends.cudnn as cudnn
+import mymodel
 
-dataset = '../../ssd2/iMaterialistFashion' # Path to dataset
-split = '/anns/validation'
-batch_size = 500
+dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
+split = 'lstm_embeddings_test_hate.txt'
+batch_size = 12
 workers = 6
-model_name = 'model_best'
+model_name = 'HateSPic_inceptionv3_bs32_decay50_all_epoch_88_best'
 
-if not os.path.exists('../../ssd2/iMaterialistFashion/CNN_output/' + model_name):
-    os.makedirs('../../ssd2/iMaterialistFashion/CNN_output/' + model_name)
+gpus = [0]
+gpu = 0
 
-output_file_path = '../../ssd2/iMaterialistFashion/CNN_output/' + model_name + '/' + split.split('/')[-1] + '.txt'
+if not os.path.exists(dataset + 'results/' + model_name):
+    os.makedirs(dataset + 'results/' + model_name)
+
+output_file_path = dataset + 'results/' + model_name + '/test.txt'
 output_file = open(output_file_path, "w")
 
+if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
+    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar')
+else:
+    print("no checkpoint found")
 
-checkpoint = torch.load(dataset + '/models/CNN/' + model_name + '.pth.tar')
-# model = checkpoint["model"] # I will be able to do that when I save the model structure also
-# weights = model.load_state_dict(checkpoint)
-# As i havent saved the model, I have to create it
-model = models.__dict__['inception_v3'](aux_logits=False) #Aux logits to omit other inception losses
-num_classes = 228
-del(model._modules['fc'])
-model.fc = nn.Linear(2048,num_classes)
-model = torch.nn.DataParallel(model).cuda()
-model.load_state_dict(checkpoint['state_dict'])
 
-sigmoid = nn.Sigmoid()
+model = mymodel.MyModel()
+model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
-test_dataset = customDatasetTest.customDatasetTest(dataset, split, CenterCrop=299)
+model.load_state_dict(state_dict)
+
+test_dataset = customDatasetTest.customDatasetTest(dataset, split, Rescale=299)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=workers, pin_memory=True, sampler=None)
 
 with torch.no_grad():
-    for i,data in enumerate(test_loader):
-        images, labels, indices = data
-        outputs = model(images)
-        outputs = sigmoid(outputs)
+    for i,(tweet_id, image, image_text, tweet, target) in enumerate(test_loader):
+        outputs = model(image, image_text, tweet)
         for idx,el in enumerate(outputs):
             topic_probs_str = ''
             for t in el:
                 topic_probs_str = topic_probs_str + ',' + str(float(t))
-            output_file.write(indices[idx] + '.jpg' + topic_probs_str + '\n')
+            output_file.write(str(tweet_id[idx]) + ',' + str(int(target[idx])) + topic_probs_str + '\n')
 
         print(str(i) + ' / ' + str(len(test_loader)))

@@ -6,8 +6,7 @@ import torch.utils.data.distributed
 import torchvision.models as models
 import customDataset
 import trainingFunctions as t
-import torch.nn.functional as F
-
+import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
@@ -15,7 +14,7 @@ from pylab import zeros, arange, subplots, plt, savefig
 #     if name.islower() and not name.startswith("__")
 #     and callable(models.__dict__[name]))
 
-training_id = 'HateSPic_inception_v3_bs32'
+training_id = 'HateSPic_inceptionv3_bs32_decay100_onlyImages'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
@@ -24,11 +23,11 @@ ImgSize = 299
 gpus = [0]
 gpu = 0
 workers = 12 # Num of data loading workers
-epochs = 300
+epochs = 201
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
 lr = 0.001 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
-decay_every = 20 # Decay lr by a factor of 10 every decay_every epochs
+decay_every = 100 # Decay lr by a factor of 10 every decay_every epochs
 momentum = 0.9
 weight_decay = 1e-4
 print_freq = 1
@@ -38,47 +37,11 @@ plot = True
 best_prec1 = 0
 aux_logits = False # To desactivate the other loss in Inception v3 (there is only one extra loss
 
-weights = [0.33376, 1.0] #[0.32, 1.0]
+weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
 
-class MyModel(nn.Module):
 
-    def __init__(self):
-
-        num_classes = 2
-        lstm_hidden_state_dim = 50
-
-        super(MyModel, self).__init__()
-        self.cnn = models.inception_v3(pretrained=False, aux_logits=False)
-
-        # Delete last fc that maps 2048 features to 1000 classes.
-        # Now the output of CNN is the 2048 features
-        del(self.cnn._modules['fc']) # Had to remove manually fc from forward pass at inception.py
-
-        # Create the linear layers that will process both the img and the txt
-        self.fc1 = nn.Linear(2048 + lstm_hidden_state_dim * 2, 2048 + lstm_hidden_state_dim * 2)
-        self.fc2 = nn.Linear(2048 + lstm_hidden_state_dim * 2, 1024)
-        self.fc3 = nn.Linear(1024, 512)
-        self.fc4 = nn.Linear(512, num_classes)
-
-
-    def forward(self, image, img_text, tweet):
-        x1 = self.cnn(image)
-        x2 = img_text
-        x3 = tweet
-
-        x = torch.cat((x2, x3), dim=1)
-        x = torch.cat((x1, x), dim=1)
-
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.fc4(x)
-
-        return x
-
-
-model = MyModel()
+model = mymodel.MyModel()
 
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
@@ -169,14 +132,7 @@ for epoch in range(start_epoch, epochs):
     if is_best:
         print("New best model. Prec1 = " + str(plot_data['val_acc_avg'][epoch]))
         best_prec1 = max(plot_data['val_acc_avg'][epoch], best_prec1)
-        t.save_checkpoint(dataset, {
-            'model': model,
-            'epoch': epoch,
-            'arch': arch,
-            'state_dict': model.state_dict(),
-            'best_prec1': best_prec1,
-            'optimizer' : optimizer.state_dict(),
-        }, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '.pth.tar')
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
@@ -196,6 +152,8 @@ for epoch in range(start_epoch, epochs):
         plt.grid(True)
         plt.show()
         plt.pause(0.001)
-        title = dataset +'/models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
-        savefig(title, bbox_inches='tight')
+
+        if epoch % 25 == 0:
+            title = dataset +'/models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
+            savefig(title, bbox_inches='tight')
 

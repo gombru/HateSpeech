@@ -1,19 +1,11 @@
 from __future__ import print_function, division
-import os
 import torch
-import pandas as pd
-from skimage import io, transform
 import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
-import cv2
 import customTransform
 from PIL import Image
-import json
 
 class CustomDataset(Dataset):
-    """Face Landmarks dataset."""
 
     def __init__(self, root_dir, split, Rescale, RandomCrop, Mirror):
         """
@@ -89,13 +81,13 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        img_name = '{}{}/{}{}'.format(self.root_dir, 'img', self.tweet_ids[idx], '.jpg')
+        img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx], '.jpg')
 
         try:
             image = Image.open(img_name)
             # print("FOUND " + img_name)
         except:
-            img_name = '../../../datasets/HateSPic/HateSPic/img/1011278006608912384.jpg'
+            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + img_name)
             image = Image.open(img_name)
 
@@ -117,7 +109,7 @@ class CustomDataset(Dataset):
             im_np = customTransform.PreprocessImage(im_np)
 
         except:
-            img_name = '../../../datasets/HateSPic/HateSPic/img/1011278006608912384.jpg'
+            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
             print("Error on data aumentation, using hardcoded: " + img_name)
             image = Image.open(img_name)
             if self.RandomCrop != 0:
@@ -133,9 +125,17 @@ class CustomDataset(Dataset):
         label = torch.from_numpy(np.array([int(self.labels[idx])]))
         label = label.type(torch.LongTensor)
 
+        # Set text embedding to 0!
+        self.img_texts[idx] = np.zeros(self.hidden_state_dim)
+        self.tweets[idx] = np.zeros(self.hidden_state_dim)
+
+        # Set image to 0!
+        # out_img = np.zeros((3, 299, 299), dtype=np.float32)
+
         # Multilabel / Regression
         img_text = torch.from_numpy(np.array(self.img_texts[idx]))
         tweet = torch.from_numpy(np.array(self.tweets[idx]))
         # print(out_img.shape)
+
 
         return torch.from_numpy(out_img), img_text, tweet, label

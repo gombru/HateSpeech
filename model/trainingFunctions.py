@@ -148,10 +148,10 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
     return plot_data
 
 
-def save_checkpoint(dataset, state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
-    if is_best:
-        shutil.copyfile(filename, dataset +'/models/' + 'model_best.pth.tar')
+def save_checkpoint(dataset, model, is_best, filename='checkpoint.pth.tar'):
+    torch.save(model.state_dict(), filename + '.pth.tar')
+    # if is_best:
+    #     shutil.copyfile(filename + '.pth.tar', filename + '_best.pth.tar')
 
 
 class AverageMeter(object):

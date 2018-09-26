@@ -16,7 +16,7 @@ caffe.set_mode_gpu()
 twitter = True # If filtering fromt twitter also consider LSTM scores
 lstm_filtering_probability = 5 # The probability that the LSTM filtering is not applied. I want to let in some "random" images
 lstm_scores_path = '../../../datasets/HateSPic/twitter/lstm_scores.txt'
-lstm_th = 0.5
+lstm_th = 0.4
 white_img_th = 150 # A less permisive text thereshold is applied to them
 extreme_white_img_th = 200 # Dicard all images over this whiteness
 white_img_txt_th = 0.2
@@ -24,7 +24,7 @@ txt_th = 0.3
 
 #Compute heatmaps from images in txt
 img_dir = '../../../datasets/HateSPic/twitter/img/'
-json_dir = '../../../datasets/HateSPic/twitter/json_2/'
+json_dir = '../../../datasets/HateSPic/twitter/json_7/'
 out_json_dir = '../../../datasets/HateSPic/HateSPicLabeler/filtered_original_json/HateSPic/'
 out_dir = '../../../datasets/HateSPic/twitter/txt_img_fitlered/'
 discarded_dir = '../../../datasets/HateSPic/twitter/txt_img_discarded/'
@@ -53,7 +53,7 @@ print 'Filtering ...'
 
 count = 0
 start = time.time()
-
+dicardedByLSTM = 0
 for img_path in img_paths:
 
     # LSTM discarding
@@ -61,6 +61,7 @@ for img_path in img_paths:
         try:
             if lstm_scores[img_path.split('/')[-1].split('.')[0]] < lstm_th:
                 print("Img discarded by LSTM")
+                dicardedByLSTM += 1
                 continue
         except:
             print("Couldn't find LSTM score")
@@ -126,4 +127,5 @@ for img_path in img_paths:
     except:
         print("Error with image: " + img_path)
 
+print("Discarded by LSTM " + str(dicardedByLSTM) + " from " + str(len(img_paths)))
 print("DONE")

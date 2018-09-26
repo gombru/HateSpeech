@@ -61,8 +61,8 @@ for i,dataset in enumerate(datasets):
     for num_files, file in enumerate(os.listdir(generated_base_path + dataset)):
         id = json.load(open(generated_base_path + dataset + file, 'r'))['id']
         # If img_txt file already exists, skip
-        if not os.isfile(RESULTS_DIR + str(id) + '.json'):
-            image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
+        # if not os.isfile(RESULTS_DIR + str(id) + '.json'):
+        image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
 
 
 # I do it image by image to don't fuck indices
@@ -75,9 +75,7 @@ for count, cur_image_filename in enumerate(image_filenames):
         else:
             for idx, resp in enumerate(response.json()['responses']):
                 if len(resp) == 0: continue
-                img_txt = ""
-                for detected_element in resp['textAnnotations']: # Loop for each text detected
-                    img_txt += detected_element['description']
+                img_txt = resp['textAnnotations'][0]['description'].replace('\n',' ')
 
             if len(img_txt) > 3:
                 # save to JSON file

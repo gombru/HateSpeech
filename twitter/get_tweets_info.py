@@ -12,12 +12,12 @@ from PIL import Image
 
 # -- CONFIG --
 # tweets_data_path = '../../../datasets/HateSPic/twitter/hard/raw/hate_tweets_1.txt'
-tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/tweets_all_7.txt'
+tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/tweets_all_16.txt'
 min_text_length = 4
 images_dir = '../../../datasets/HateSPic/twitter/img/'
-tweets_info_dir = '../../../datasets/HateSPic/twitter/json_2/'
+tweets_info_dir = '../../../datasets/HateSPic/twitter/json_7/'
 
-discard = ['naked','beautiful','sexy','videos','sex','nude','girl','porn','pics']
+discard = ['naked','beautiful','sexy','videos','sex','nude','girl','porn','pics','gallery','galery','clip','xxx','XXX','video','18','hottie']
 
 threads = 10
 
