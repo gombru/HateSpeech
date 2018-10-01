@@ -5,12 +5,13 @@ import mymodel
 
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split = 'lstm_embeddings_test_hate.txt'
-batch_size = 12
+batch_size = 32
 workers = 6
-model_name = 'HateSPic_inceptionv3_6fc_bs32_decay50_all_epoch_123'
+model_name = 'HateSPic_inceptionv3_6fc_bs32_decay150_all_epoch_18'
 
 gpus = [0]
 gpu = 0
+CUDA_VISIBLE_DEVICES=0
 
 if not os.path.exists(dataset + 'results/' + model_name):
     os.makedirs(dataset + 'results/' + model_name)
@@ -19,14 +20,12 @@ output_file_path = dataset + 'results/' + model_name + '/test.txt'
 output_file = open(output_file_path, "w")
 
 if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
-    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar')
+    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:3':'cuda:0'})
 else:
     print("no checkpoint found")
 
-
 model = mymodel.MyModel()
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
-
 model.load_state_dict(state_dict)
 
 

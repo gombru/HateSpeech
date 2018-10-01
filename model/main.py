@@ -9,19 +9,20 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'HateSPic_inceptionv3_6fc_bs32_decay200_all'
+training_id = 'HateSPic_inceptionv3_4fc_bs32_decay30_all'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
-workers = 12 # Num of data loading workers
+workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
-lr = 0.001 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
-decay_every = 200 # Decay lr by a factor of 10 every decay_every epochs
+lr = 1e-3 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
+lr_cnn = 1e-4 # Initial learning rate for pretrained CNN layers
+decay_every = 30 # Decay lr by a factor of 10 every decay_every epochs
 momentum = 0.9
 weight_decay = 1e-4
 print_freq = 1
@@ -36,6 +37,18 @@ class_weights = torch.FloatTensor(weights).cuda()
 
 model = mymodel.MyModel()
 
+# define loss function (criterion) and optimizer
+criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
+# criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
+# criterion = nn.BCEWithLogitsLoss().cuda(gpu)
+
+optimizer = torch.optim.SGD([
+                {'params': model.mm.parameters()},
+                {'params': model.cnn.parameters(), 'lr': lr_cnn}],
+                            lr,
+                            momentum=momentum,
+                            weight_decay=weight_decay)
+
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
 # Freeze layers
@@ -43,14 +56,6 @@ model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 #     param.requires_grad = False # This would froze all net
 # Parameters of newly constructed modules have requires_grad=True by default
 
-# define loss function (criterion) and optimizer
-criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
-# criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
-# criterion = nn.BCEWithLogitsLoss().cuda(gpu)
-
-optimizer = torch.optim.SGD(model.parameters(), lr,
-                            momentum=momentum,
-                            weight_decay=weight_decay)
 
 # optionally resume from a checkpoint
 if resume:
