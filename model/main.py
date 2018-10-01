@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'HateSPic_inceptionv3_4fc_bs32_decay30_all'
+training_id = 'HateSPic_inceptionv3_4fc_samedim__bs32_decay30_all'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
