@@ -6,7 +6,6 @@ import customTransform
 from PIL import Image
 
 class customDatasetTest(Dataset):
-    """Face Landmarks dataset."""
 
     def __init__(self, root_dir, split, Rescale):
         """
@@ -47,6 +46,10 @@ class customDatasetTest(Dataset):
         for i,line in enumerate(open(root_dir + 'tweet_embeddings/' + split)):
             data = line.split(',')
             self.tweet_ids[i] = data[0] # id
+            # if 'val' in split:
+            #     print('val')
+            #     self.labels.append(0)
+            # else:
             self.labels.append(1) # Assign hate label
             for c in range(self.hidden_state_dim): # Read LSTM hidden state
                 self.tweets[i,c] = float(data[c+1])
@@ -77,11 +80,26 @@ class customDatasetTest(Dataset):
     def __getitem__(self, idx):
 
         img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx], '.jpg')
-        image = Image.open(img_name)
-        image = customTransform.Rescale(image,self.Rescale)
-        im_np = np.array(image, dtype=np.float32)
-        im_np = customTransform.PreprocessImage(im_np)
 
+        try:
+            image = Image.open(img_name)
+        except:
+            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
+            print("Img file " + img_name + " not found, using hardcoded " + img_name)
+            image = Image.open(img_name)
+
+        try:
+            image = customTransform.Rescale(image, self.Rescale)
+            im_np = np.array(image, dtype=np.float32)
+            im_np = customTransform.PreprocessImage(im_np)
+
+        except:
+            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
+            print("Error on data aumentation, using hardcoded: " + img_name)
+            image = Image.open(img_name)
+            image = customTransform.Rescale(image, self.Rescale)
+            im_np = np.array(image, dtype=np.float32)
+            im_np = customTransform.PreprocessImage(im_np)
 
         out_img = np.copy(im_np)
 
@@ -92,6 +110,7 @@ class customDatasetTest(Dataset):
         # Set text embedding to 0!
         # self.img_texts[idx] = np.zeros(self.hidden_state_dim)
         # self.tweets[idx] = np.zeros(self.hidden_state_dim)
+
         # Set image to 0!
         # out_img = np.zeros((3, 299, 299), dtype=np.float32)
 
@@ -99,6 +118,5 @@ class customDatasetTest(Dataset):
         img_text = torch.from_numpy(np.array(self.img_texts[idx]))
         tweet = torch.from_numpy(np.array(self.tweets[idx]))
         # print(out_img.shape)
-
 
         return self.tweet_ids[idx], torch.from_numpy(out_img), img_text, tweet, label

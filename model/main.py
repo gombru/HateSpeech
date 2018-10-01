@@ -3,31 +3,25 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data
 import torch.utils.data.distributed
-import torchvision.models as models
 import customDataset
 import trainingFunctions as t
 import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-# model_names = sorted(name for name in models.__dict__
-#     if name.islower() and not name.startswith("__")
-#     and callable(models.__dict__[name]))
-
-training_id = 'HateSPic_inceptionv3_bs32_decay100_onlyImages'
+training_id = 'HateSPic_inceptionv3_6fc_bs32_decay200_all'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
-arch = 'inception_v3'
 ImgSize = 299
 gpus = [0]
 gpu = 0
 workers = 12 # Num of data loading workers
-epochs = 201
+epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
 lr = 0.001 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
-decay_every = 100 # Decay lr by a factor of 10 every decay_every epochs
+decay_every = 200 # Decay lr by a factor of 10 every decay_every epochs
 momentum = 0.9
 weight_decay = 1e-4
 print_freq = 1
@@ -35,7 +29,6 @@ resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' 
 # evaluate = False # Evaluate model on validation set at start
 plot = True
 best_prec1 = 0
-aux_logits = False # To desactivate the other loss in Inception v3 (there is only one extra loss
 
 weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
@@ -45,10 +38,11 @@ model = mymodel.MyModel()
 
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
-# Edit model
+# Freeze layers
 # for param in model.parameters():
 #     param.requires_grad = False # This would froze all net
 # Parameters of newly constructed modules have requires_grad=True by default
+
 # define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
 # criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
@@ -124,7 +118,7 @@ for epoch in range(start_epoch, epochs):
     # train for one epoch
     plot_data = t.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
 
-    # evalu-ate on validation set
+    # evaluate on validation set
     plot_data = t.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
 
     # remember best prec@1 and save checkpoint

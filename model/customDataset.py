@@ -126,8 +126,8 @@ class CustomDataset(Dataset):
         label = label.type(torch.LongTensor)
 
         # Set text embedding to 0!
-        self.img_texts[idx] = np.zeros(self.hidden_state_dim)
-        self.tweets[idx] = np.zeros(self.hidden_state_dim)
+        # self.img_texts[idx] = np.zeros(self.hidden_state_dim)
+        # self.tweets[idx] = np.zeros(self.hidden_state_dim)
 
         # Set image to 0!
         # out_img = np.zeros((3, 299, 299), dtype=np.float32)
