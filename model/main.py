@@ -152,7 +152,7 @@ for epoch in range(start_epoch, epochs):
         plt.show()
         plt.pause(0.001)
 
-        if epoch % 25 == 0:
+        if epoch % 10 == 0:
             title = dataset +'/models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
             savefig(title, bbox_inches='tight')
 

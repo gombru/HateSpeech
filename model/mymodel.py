@@ -82,6 +82,7 @@ class MultiModalNetConcat(nn.Module):
 
         return x
 
+
 class MultiModalNetSpacialConcat(nn.Module):
     # CNN input size: 8 x 8 x 2048
     def __init__(self):
@@ -123,6 +124,140 @@ class MultiModalNetSpacialConcat(nn.Module):
         x = F.relu(self.fc3(x))# 2
 
         return x
+
+
+class MultiModalNetSpacialConcatSameDim(nn.Module):
+    # CNN input size: 8 x 8 x 2048
+    def __init__(self):
+        super(MultiModalNetSpacialConcatSameDim, self).__init__()
+        # Create the linear layers that will process both the img and the txt
+        num_classes = 2
+        lstm_hidden_state_dim = 50
+
+        # Unimodal
+        self.cnn_fc1 = nn.Linear(2048, 1024)
+        self.img_text_fc1 = nn.Linear(50, 1024)
+        self.tweet_text_fc1 = nn.Linear(50, 1024)
+
+        self.MM_InceptionE_1 = InceptionE(2148)
+        self.MM_InceptionE_2 = InceptionE(3072)
+        self.fc1 = nn.Linear(2048, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, num_classes)
+
+
+    def forward(self, x1, x2, x3):
+
+        # Separate process
+        x1 = self.cnn_fc1(x1)
+        x2 = self.img_text_fc1(x2)
+        x3 = self.tweet_text_fc1(x3)
+
+        # Repeat text embeddings in the 8x8 grid
+        x2 = x2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
+        x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
+
+        # Concatenate text embeddings in each 8x8 cell
+        x = torch.cat((x2, x3), dim=1) # 2048 x 8 x 8
+        x = torch.cat((x1, x), dim=1) # 3072 x 8 x 8
+
+        # 1x1 Convolutions using Inceptions E blocks
+        x = self.MM_InceptionE_1(x) # 3072 x 8 x 8
+        x = self.MM_InceptionE_2(x) # 2048 x 8 x 8
+
+        # AVG Pooling as in Inception
+        x = F.avg_pool2d(x, kernel_size=8)  # 2048 x 1 x 1
+
+        # Dropout
+        x = F.dropout(x, training=self.training)
+
+        # Reshape and FC layers
+        x = x.view(x.size(0), -1) # 2048
+        x = F.relu(self.fc1(x))  # 1024
+        x = F.relu(self.fc2(x)) # 512
+        x = F.relu(self.fc3(x))# 2
+
+        return x
+
+class MultiModalNetTextualKernels(nn.Module):
+    # CNN input size: 8 x 8 x 2048
+    def __init__(self):
+        super(MultiModalNetSpacialConcat, self).__init__()
+        # Create the linear layers that will process both the img and the txt
+        num_classes = 2
+        lstm_hidden_state_dim = 50
+        self.k = 2
+
+        # Textual kernels
+        self.fc_tweetTxt_k1 = nn.Linear(lstm_hidden_state_dim, 2048)
+        self.fc_tweet_k2 = nn.Linear(lstm_hidden_state_dim, 2048)
+        self.fc_imgTxt_k1 = nn.Linear(lstm_hidden_state_dim, 2048)
+        self.fc_imgTxt_k2 = nn.Linear(lstm_hidden_state_dim, 2048)
+
+        self.MM_InceptionE_1 = InceptionE(2048+self.k+100)
+        self.MM_InceptionE_2 = InceptionE(2048)
+        self.fc1 = nn.Linear(2048, 1024)
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc3 = nn.Linear(512, num_classes)
+
+
+    def forward(self, x1, x2, x3):
+
+        # Learn K ((2)10) kernels from Text embeddings
+        # Kernels Tweet Text # 2048 x 1 x 1
+        tweetTxt_k1 = F.relu(self.fc_tweetTxt_k1)
+        tweetTxt_k2 = F.relu(self.fc_tweet_k2)
+        # Kernels Image Text # 2048 x 1 x 1
+        imgTxt_k1 = F.relu(self.fc_imgTxt_k1)
+        imgTxt_k2 = F.relu(self.fc_imgTxt_k2)
+
+        # Repeat textual kernelss in the 8x8 grid
+        tweetTxt_k1 = tweetTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        tweetTxt_k2 = tweetTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        imgTxt_k1 = imgTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        imgTxt_k2 = imgTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+
+        # Concatenate textual kernels (along 0 dimension)
+        tweetTxt_k1 = tweetTxt_k1.unsqueeze(0) # 1 x 2048 x 8 x 8
+        tweetTxt_k2 = tweetTxt_k2.unsqueeze(0)
+        imgTxt_k1 = imgTxt_k1.unsqueeze(0)
+        imgTxt_k2 = imgTxt_k2.unsqueeze(0)
+        textual_kernels = torch.cat((tweetTxt_k1, tweetTxt_k2), dim=1)
+        textual_kernels = torch.cat((textual_kernels, imgTxt_k1), dim=1)
+        textual_kernels = torch.cat((textual_kernels, imgTxt_k2), dim=1)  # K x 2048 x 8 x 8
+
+        # Apply kernels to visual feature map
+        mm_info = 0 # K x 8 x 8
+
+        # Concatenate visual feature map with resulting mm info
+        x = torch.cat((x1, mm_info), dim=1)  # 2048+K x 8 x 8
+
+        # Repeat text embeddings in the 8x8 grid
+        x2 = x2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+        x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+
+        # Concatenate text embeddings in each 8x8 cell
+        x = torch.cat((x2, x3), dim=1) # 100 x 8 x 8
+        x = torch.cat((x1, x), dim=1) # 2048+K+100 x 8 x 8
+
+        # 1x1 Convolutions using Inceptions E blocks
+        x = self.MM_InceptionE_1(x) # 2048+K+100 x 8 x 8
+        x = self.MM_InceptionE_2(x) # 2048 x 8 x 8
+
+        # AVG Pooling as in Inception
+        x = F.avg_pool2d(x, kernel_size=8)  # 2048 x 1 x 1
+
+        # Dropout
+        x = F.dropout(x, training=self.training)
+
+        # Reshape and FC layers
+        x = x.view(x.size(0), -1) # 2048
+        x = F.relu(self.fc1(x)) # 1024
+        x = F.relu(self.fc2(x)) # 512
+        x = F.relu(self.fc3(x)) # 2
+
+        return x
+
 
 
 class InceptionE(nn.Module):
