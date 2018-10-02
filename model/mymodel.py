@@ -10,7 +10,7 @@ class MyModel(nn.Module):
 
         super(MyModel, self).__init__()
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = MultiModalNetSpacialConcat()
+        self.mm = MultiModalNetSpacialConcatSameDim()
 
     def forward(self, image, img_text, tweet):
 
@@ -135,12 +135,11 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
         lstm_hidden_state_dim = 50
 
         # Unimodal
-        self.cnn_fc1 = nn.Linear(2048, 1024)
         self.img_text_fc1 = nn.Linear(50, 1024)
         self.tweet_text_fc1 = nn.Linear(50, 1024)
 
-        self.MM_InceptionE_1 = InceptionE(2148)
-        self.MM_InceptionE_2 = InceptionE(3072)
+        self.MM_InceptionE_1 = InceptionE(2048*2)
+        self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, 512)
         self.fc3 = nn.Linear(512, num_classes)
@@ -149,7 +148,6 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
     def forward(self, x1, x2, x3):
 
         # Separate process
-        x1 = self.cnn_fc1(x1)
         x2 = self.img_text_fc1(x2)
         x3 = self.tweet_text_fc1(x3)
 
