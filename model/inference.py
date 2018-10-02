@@ -7,7 +7,7 @@ dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split = 'lstm_embeddings_test_hate.txt'
 batch_size = 32
 workers = 6
-model_name = 'HateSPic_inceptionv3_6fc_bs32_decay30_all_epoch_22'
+model_name = 'HateSPic_inceptionv3_4fc_samedim_bs32_decay30_onlyImg_epoch_5'
 
 gpus = [0]
 gpu = 0
@@ -20,7 +20,7 @@ output_file_path = dataset + 'results/' + model_name + '/test.txt'
 output_file = open(output_file_path, "w")
 
 if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
-    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:3':'cuda:0'})
+    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0'})
 else:
     print("no checkpoint found")
 
