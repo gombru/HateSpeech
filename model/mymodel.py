@@ -9,6 +9,7 @@ class MyModel(nn.Module):
     def __init__(self):
 
         super(MyModel, self).__init__()
+
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
         self.mm = MultiModalNetSpacialConcatSameDim()
 
@@ -26,9 +27,11 @@ class MultiModalNetConcat(nn.Module):
 
     def __init__(self):
         super(MultiModalNetConcat, self).__init__()
+
+        self.num_classes = 2
+        self.lstm_hidden_state_dim = 50
+
         # Create the linear layers that will process both the img and the txt
-        num_classes = 2
-        lstm_hidden_state_dim = 50
 
         # ARCH-1 4fc same dimensions
         # self.fc1 = nn.Linear(2048 + lstm_hidden_state_dim * 2, 2048 + lstm_hidden_state_dim * 2)
@@ -45,7 +48,7 @@ class MultiModalNetConcat(nn.Module):
         self.fc1 = nn.Linear(1024*3, 2048)
         self.fc2 = nn.Linear(2048, 1024)
         self.fc3 = nn.Linear(1024, 512)
-        self.fc4 = nn.Linear(512, num_classes)
+        self.fc4 = nn.Linear(512, self.num_classes)
 
         # ARCH-2 6fc
         # self.fc1 = nn.Linear(2048 + lstm_hidden_state_dim * 2, 2048 + lstm_hidden_state_dim * 2)
@@ -87,15 +90,16 @@ class MultiModalNetSpacialConcat(nn.Module):
     # CNN input size: 8 x 8 x 2048
     def __init__(self):
         super(MultiModalNetSpacialConcat, self).__init__()
-        # Create the linear layers that will process both the img and the txt
-        num_classes = 2
-        lstm_hidden_state_dim = 50
 
+        self.num_classes = 2
+        self.lstm_hidden_state_dim = 50
+
+        # Create the linear layers that will process both the img and the txt
         self.MM_InceptionE_1 = InceptionE(2148)
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, num_classes)
+        self.fc3 = nn.Linear(512, self.num_classes)
 
 
     def forward(self, x1, x2, x3):
@@ -130,9 +134,9 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
     # CNN input size: 8 x 8 x 2048
     def __init__(self):
         super(MultiModalNetSpacialConcatSameDim, self).__init__()
-        # Create the linear layers that will process both the img and the txt
-        num_classes = 2
-        lstm_hidden_state_dim = 50
+
+        self.num_classes = 2
+        self.lstm_hidden_state_dim = 50
 
         # Unimodal
         self.img_text_fc1 = nn.Linear(50, 1024)
@@ -142,7 +146,7 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, num_classes)
+        self.fc3 = nn.Linear(512, self.num_classes)
 
 
     def forward(self, x1, x2, x3):
@@ -180,52 +184,63 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
 class MultiModalNetTextualKernels(nn.Module):
     # CNN input size: 8 x 8 x 2048
     def __init__(self):
-        super(MultiModalNetSpacialConcat, self).__init__()
+        super(MultiModalNetTextualKernels, self).__init__()
         # Create the linear layers that will process both the img and the txt
-        num_classes = 2
-        lstm_hidden_state_dim = 50
+        self.num_classes = 2
+        self.lstm_hidden_state_dim = 50
+        self.batch_size = 32
         self.k = 2
 
         # Textual kernels
-        self.fc_tweetTxt_k1 = nn.Linear(lstm_hidden_state_dim, 2048)
-        self.fc_tweet_k2 = nn.Linear(lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k1 = nn.Linear(lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k2 = nn.Linear(lstm_hidden_state_dim, 2048)
+        self.fc_tweetTxt_k1 = nn.Linear(self.lstm_hidden_state_dim, 2048)
+        self.fc_tweetTxt_k2 = nn.Linear(self.lstm_hidden_state_dim, 2048)
+        self.fc_imgTxt_k1 = nn.Linear(self.lstm_hidden_state_dim, 2048)
+        self.fc_imgTxt_k2 = nn.Linear(self.lstm_hidden_state_dim, 2048)
 
-        self.MM_InceptionE_1 = InceptionE(2048+self.k+100)
+        self.MM_InceptionE_1 = InceptionE(2048+self.k*2+100)
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1 = nn.Linear(2048, 1024)
         self.fc2 = nn.Linear(1024, 512)
-        self.fc3 = nn.Linear(512, num_classes)
+        self.fc3 = nn.Linear(512, self.num_classes)
 
 
     def forward(self, x1, x2, x3):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = F.relu(self.fc_tweetTxt_k1)
-        tweetTxt_k2 = F.relu(self.fc_tweet_k2)
+        tweetTxt_k1 = F.relu(self.fc_tweetTxt_k1(x3))
+        tweetTxt_k2 = F.relu(self.fc_tweetTxt_k2(x3))
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = F.relu(self.fc_imgTxt_k1)
-        imgTxt_k2 = F.relu(self.fc_imgTxt_k2)
+        imgTxt_k1 = F.relu(self.fc_imgTxt_k1(x2))
+        imgTxt_k2 = F.relu(self.fc_imgTxt_k2(x2))
 
         # Repeat textual kernelss in the 8x8 grid
-        tweetTxt_k1 = tweetTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
-        tweetTxt_k2 = tweetTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
-        imgTxt_k1 = imgTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
-        imgTxt_k2 = imgTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        # tweetTxt_k1 = tweetTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        # tweetTxt_k2 = tweetTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        # imgTxt_k1 = imgTxt_k1.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
+        # imgTxt_k2 = imgTxt_k2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 2048 x 8 x 8
 
         # Concatenate textual kernels (along 0 dimension)
-        tweetTxt_k1 = tweetTxt_k1.unsqueeze(0) # 1 x 2048 x 8 x 8
+        tweetTxt_k1 = tweetTxt_k1.unsqueeze(0) # 1 x 2048
         tweetTxt_k2 = tweetTxt_k2.unsqueeze(0)
         imgTxt_k1 = imgTxt_k1.unsqueeze(0)
         imgTxt_k2 = imgTxt_k2.unsqueeze(0)
-        textual_kernels = torch.cat((tweetTxt_k1, tweetTxt_k2), dim=1)
-        textual_kernels = torch.cat((textual_kernels, imgTxt_k1), dim=1)
-        textual_kernels = torch.cat((textual_kernels, imgTxt_k2), dim=1)  # K x 2048 x 8 x 8
+        textual_kernels = torch.cat((tweetTxt_k1, tweetTxt_k2), dim=0)
+        textual_kernels = torch.cat((textual_kernels, imgTxt_k1), dim=0)
+        textual_kernels = torch.cat((textual_kernels, imgTxt_k2), dim=0)  # K x 2048
+        textual_kernels = textual_kernels.unsqueeze(3)
+        textual_kernels = textual_kernels.unsqueeze(4)
 
-        # Apply kernels to visual feature map
-        mm_info = 0 # K x 8 x 8
+
+        # Apply 1x1x2048 kernels to visual feature map
+        #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
+        #     weight: filters of shape (:math:`out\_channels \times \frac{in\_channels}{groups} \times kH \times kW`)
+        #   --> But we have different filters for batch element, so we have to do it element by element
+        mm_info = torch.cuda.FloatTensor(32,self.k*2,8,8)
+        #m_info[batch_size,k,8,8]
+        for batch_i in range(0,self.batch_size):
+            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Concatenate visual feature map with resulting mm info
         x = torch.cat((x1, mm_info), dim=1)  # 2048+K x 8 x 8
@@ -235,8 +250,8 @@ class MultiModalNetTextualKernels(nn.Module):
         x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
 
         # Concatenate text embeddings in each 8x8 cell
-        x = torch.cat((x2, x3), dim=1) # 100 x 8 x 8
-        x = torch.cat((x1, x), dim=1) # 2048+K+100 x 8 x 8
+        x23 = torch.cat((x2, x3), dim=1) # 100 x 8 x 8
+        x = torch.cat((x, x23), dim=1) # 2048+K+100 x 8 x 8
 
         # 1x1 Convolutions using Inceptions E blocks
         x = self.MM_InceptionE_1(x) # 2048+K+100 x 8 x 8

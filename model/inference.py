@@ -7,7 +7,7 @@ dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split = 'lstm_embeddings_test_hate.txt'
 batch_size = 32
 workers = 6
-model_name = 'HateSPic_inceptionv3_MultiModalNetSpacialConcat_bs32_decay30_all_epoch_9'
+model_name = 'HateSPic_inceptionv3_MultiModalNetSpacialConcat_SameDim_bs32_decay30_all_epoch_6'
 
 gpus = [0]
 gpu = 0
