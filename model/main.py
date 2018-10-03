@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'HateSPic_inceptionv3_MultiModalNetSpacialConcat_SameDim_bs32_decay30_all'
+training_id = 'HateSPic_inceptionv3_MultiModalNetTextualKernels_NoVisual_15kernels_bs32_decay30_all_lrMMe4_lrCNNe5'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
@@ -35,7 +35,7 @@ weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
 
 
-model = mymodel.MyModel()
+model = mymodel.MyModel(gpu)
 
 # define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
@@ -128,10 +128,10 @@ for epoch in range(start_epoch, epochs):
 
     # remember best prec@1 and save checkpoint
     is_best = plot_data['val_acc_avg'][epoch] > best_prec1
-    if is_best:
+    if is_best and epoch != 0:
         print("New best model. Prec1 = " + str(plot_data['val_acc_avg'][epoch]))
         best_prec1 = max(plot_data['val_acc_avg'][epoch], best_prec1)
-        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch))
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
@@ -152,7 +152,7 @@ for epoch in range(start_epoch, epochs):
         plt.show()
         plt.pause(0.001)
 
-        if epoch % 10 == 0:
+        if epoch % 10 == 0 and epoch != 0:
             title = dataset +'/models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
             savefig(title, bbox_inches='tight')
 
