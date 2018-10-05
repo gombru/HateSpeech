@@ -11,7 +11,7 @@ class MyModel(nn.Module):
 
         super(MyModel, self).__init__()
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = MultiModalNetTextualKernels(gpu)
+        self.mm = MultiModalNetTextualKernels_NoVisual(gpu)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):

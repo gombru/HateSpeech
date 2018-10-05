@@ -31,9 +31,8 @@ class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'SGD'
 if optimizer_name == 'ADAM':
+    lr = 0.001
     cnn_lr = 0.0001
-    mm_lr = 0.001
-
 else:
     lr = 1e-3 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
     lr_cnn = 1e-4 # Initial learning rate for pretrained CNN layers
@@ -53,7 +52,7 @@ criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
 # OPTIMIZER
 # ADAM
 if optimizer_name == 'ADAM':
-    print("Using ADAM optimizer with: CNN lr: " + str(cnn_lr) + " , mm_lr: " + str(mm_lr) )
+    print("Using ADAM optimizer with: CNN lr: " + str(cnn_lr) + " , mm_lr: " + str(lr) )
     optimizer = torch.optim.Adam([
                     {'params': model.mm.parameters()},
                     {'params': model.cnn.parameters(), 'lr': cnn_lr}],

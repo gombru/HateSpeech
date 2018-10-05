@@ -177,12 +177,12 @@ def adjust_learning_rate(optimizer, epoch, lr, decay_every):
 
     # lr = lr * (0.1 ** (epoch // decay_every)) # This was the former code but its wrong
 
-    # if epoch != 0 and epoch % decay_every == 0:
+    if epoch != 0 and epoch % decay_every == 0:
         # lr = lr * 0.1
         # print("Learning rate changed to " + str(lr))
-    print("Learning rate reduced by 10")
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = param_group['lr'] * 0.1
+        print("Learning rate reduced by 10")
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * 0.1
     return lr
 
 
