@@ -16,16 +16,10 @@ split_val =  'lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
-optimizer = 'ADAM'
 workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
-lr = 1e-3 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
-lr_cnn = 1e-4 # Initial learning rate for pretrained CNN layers
-decay_every = 30 # Decay lr by a factor of 10 every decay_every epochs
-momentum = 0.9
-weight_decay = 1e-4
 print_freq = 1
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start
@@ -34,6 +28,19 @@ best_prec1 = 0
 
 weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
+
+optimizer_name = 'SGD'
+if optimizer_name == 'ADAM':
+    cnn_lr = 0.0001
+    mm_lr = 0.001
+
+else:
+    lr = 1e-3 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
+    lr_cnn = 1e-4 # Initial learning rate for pretrained CNN layers
+    decay_every = 30 # Decay lr by a factor of 10 every decay_every epochs
+    momentum = 0.9
+    weight_decay = 1e-4
+
 
 
 model = mymodel.MyModel(gpu=gpu)
@@ -45,14 +52,12 @@ criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
 
 # OPTIMIZER
 # ADAM
-if optimizer == 'ADAM':
-    adam_cnn_lr = 0.0001
-    adam_mm_lr = 0.001
-    print("Using ADAM optimizer with: CNN lr: " + str(adam_cnn_lr) + " , mm_lr: " + str(adam_mm_lr) )
+if optimizer_name == 'ADAM':
+    print("Using ADAM optimizer with: CNN lr: " + str(cnn_lr) + " , mm_lr: " + str(mm_lr) )
     optimizer = torch.optim.Adam([
                     {'params': model.mm.parameters()},
-                    {'params': model.cnn.parameters(), 'lr': adam_cnn_lr}],
-                                lr = adam_mm_lr)
+                    {'params': model.cnn.parameters(), 'lr': cnn_lr}],
+                                lr = lr)
 # SGD
 else:
     print("Using SGD optimizer")
@@ -132,7 +137,8 @@ ax2.set_ylim([-1, 101])
 
 for epoch in range(start_epoch, epochs):
     plot_data['epoch'] = epoch
-    lr = t.adjust_learning_rate(optimizer, epoch, lr, decay_every)
+    if optimizer_name == 'SGD':
+        lr = t.adjust_learning_rate(optimizer, epoch, lr, decay_every)
 
     # train for one epoch
     plot_data = t.train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_data, gpu)
