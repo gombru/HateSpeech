@@ -16,6 +16,7 @@ split_val =  'lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
+optimizer = 'ADAM'
 workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
@@ -35,19 +36,32 @@ weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
 
 
-model = mymodel.MyModel(gpu)
+model = mymodel.MyModel(gpu=gpu)
 
 # define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
 # criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
 # criterion = nn.BCEWithLogitsLoss().cuda(gpu)
 
-optimizer = torch.optim.SGD([
-                {'params': model.mm.parameters()},
-                {'params': model.cnn.parameters(), 'lr': lr_cnn}],
-                            lr,
-                            momentum=momentum,
-                            weight_decay=weight_decay)
+# OPTIMIZER
+# ADAM
+if optimizer == 'ADAM':
+    adam_cnn_lr = 0.0001
+    adam_mm_lr = 0.001
+    print("Using ADAM optimizer with: CNN lr: " + str(adam_cnn_lr) + " , mm_lr: " + str(adam_mm_lr) )
+    optimizer = torch.optim.Adam([
+                    {'params': model.mm.parameters()},
+                    {'params': model.cnn.parameters(), 'lr': adam_cnn_lr}],
+                                lr = adam_mm_lr)
+# SGD
+else:
+    print("Using SGD optimizer")
+    optimizer = torch.optim.SGD([
+                    {'params': model.mm.parameters()},
+                    {'params': model.cnn.parameters(), 'lr': lr_cnn}],
+                                lr,
+                                momentum=momentum,
+                                weight_decay=weight_decay)
 
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
