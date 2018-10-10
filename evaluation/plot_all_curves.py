@@ -6,7 +6,7 @@ import json
 
 data = {}
 
-colors = ['r','g','b','m','k','c']
+colors = ['r','g','b','m','k','c','#f47d42','#f4ca41','#c1f441','#7641f4']
 
 for file in os.listdir('../../../datasets/HateSPic/HateSPic/evaluation_results/'):
     with open('../../../datasets/HateSPic/HateSPic/evaluation_results/' + file) as f:
@@ -14,12 +14,14 @@ for file in os.listdir('../../../datasets/HateSPic/HateSPic/evaluation_results/'
 
 legends = []
 for k, v in data.iteritems():
-    if 'onlyTweet' in k: legends.append('Only Tweet Text')
-    elif 'onlyText' in k: legends.append('Only Text')
-    elif 'onlyImage' in k: legends.append('Only Image')
+    if 'onlyTweet' in k: legends.append('FCM - TT')
+    elif 'onlyText' in k: legends.append('FCM - TT,IT')
+    elif 'onlyI' in k: legends.append('FCM - I')
     elif 'Random' in k: legends.append('Random')
-    elif 'LSTM' in k: legends.append('LSTM Only Tweet Text')
-    else: legends.append('Full Tweet')
+    elif 'LSTM' in k: legends.append('LSTM - TT')
+    elif 'Concat_SameSameDim' in k: legends.append('SCM - All')
+    elif 'TextualKernels' in k: legends.append('TKM - All')
+    else: legends.append('FCM - All')
 
 
 c=0

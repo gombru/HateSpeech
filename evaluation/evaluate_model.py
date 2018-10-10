@@ -3,7 +3,7 @@ import numpy as np
 import random
 
 
-model_name = 'HateSPic_inceptionv3_bs32_decay50_all_epoch_88_best'
+model_name = 'HateSPic_inceptionv3_FCM_TTandIT_ADAM_bs32_decayNO_all_lrMMe6_lrCNNe7_epoch_54_ValAcc_75'
 
 results = []
 with open('../../../datasets/HateSPic/HateSPic/results/' + model_name + '/test.txt') as f:

@@ -11,7 +11,7 @@ class MyModel(nn.Module):
 
         super(MyModel, self).__init__()
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = MultiModalNetTextualKernels_NoVisual(gpu)
+        self.mm = MultiModalNetConcat(gpu)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
@@ -39,7 +39,7 @@ class MyModel(nn.Module):
 
 class MultiModalNetConcat(nn.Module):
 
-    def __init__(self):
+    def __init__(self,gpu):
         super(MultiModalNetConcat, self).__init__()
 
         self.num_classes = 2
@@ -85,7 +85,7 @@ class MultiModalNetConcat(nn.Module):
 
 class MultiModalNetSpacialConcat(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self):
+    def __init__(self,gpu):
         super(MultiModalNetSpacialConcat, self).__init__()
 
         self.num_classes = 2
@@ -129,7 +129,7 @@ class MultiModalNetSpacialConcat(nn.Module):
 
 class MultiModalNetSpacialConcatSameDim(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self):
+    def __init__(self,gpu):
         super(MultiModalNetSpacialConcatSameDim, self).__init__()
 
         self.num_classes = 2
