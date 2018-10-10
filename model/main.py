@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'HateSPic_inceptionv3_MultiModalNetTextualKernels_NoVisual_15kernels_bs32_decay30_all_lrMMe4_lrCNNe5'
+training_id = 'HateSPic_inceptionv3_MultiModalNetTextualKernels_15kernels_ADAM_bs32_decayNO_all_lrMMe4_lrCNNe5'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'lstm_embeddings_train_hate.txt'
 split_val =  'lstm_embeddings_val_hate.txt'
@@ -29,11 +29,13 @@ best_prec1 = 0
 weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
 class_weights = torch.FloatTensor(weights).cuda()
 
-optimizer_name = 'SGD'
+optimizer_name = 'ADAM'
 if optimizer_name == 'ADAM':
-    lr = 0.001
-    cnn_lr = 0.0001
+    print("Using ADAM optimizer")
+    lr = 1e-6
+    cnn_lr = 1e-7
 else:
+    print("Using SGD optimizer")
     lr = 1e-3 #0.01 Initial learning rate # Default 0.1, but people report better performance with 0.01 and 0.001
     lr_cnn = 1e-4 # Initial learning rate for pretrained CNN layers
     decay_every = 30 # Decay lr by a factor of 10 every decay_every epochs
@@ -130,7 +132,7 @@ ax1.set_xlabel('epoch')
 ax1.set_ylabel('train loss (r), val loss (y), train acc hate (c), train acc not hate (o)')
 ax2.set_ylabel('train acc avg (b), val acc avg (g), val acc hate (k), val acc not hate (m)')
 ax2.set_autoscaley_on(False)
-ax1.set_ylim([0.5, 0.8])
+ax1.set_ylim([0.3, 0.8])
 ax2.set_ylim([-1, 101])
 
 
