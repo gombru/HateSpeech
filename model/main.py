@@ -164,7 +164,7 @@ for epoch in range(start_epoch, epochs):
     if is_best and epoch != 0:
         print("New best model by loss. Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
-        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(float(plot_data['val_loss'][epoch])))
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
