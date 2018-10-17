@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/MMHS-lstm_embeddings_img_text.txt')):
+        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/MMHS-v2mm-lstm_embeddings_img_text.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
