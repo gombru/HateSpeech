@@ -26,7 +26,7 @@ class StdOutListener(StreamListener):
 if __name__ == '__main__':
 
     keywords = []
-    with open('my_terms.txt') as f:
+    with open('termsAndMine.txt') as f:
         for line in f: keywords.append(line.rstrip())
     #This handles Twitter authetification and the connection to Twitter Streaming API
     l = StdOutListener()

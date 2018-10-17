@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'HateSPic_inceptionv3_MultiModalNetTextualKernels_15kernels_ADAM_bs32_decayNO_all_lrMMe4_lrCNNe5'
+training_id = 'MMHS-LSTM_FCM_TT_ADAM_bs32_lrMMe6_lrCNNe7'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
-split_train = 'lstm_embeddings_train_hate.txt'
-split_val =  'lstm_embeddings_val_hate.txt'
+split_train = 'MMHS-lstm_embeddings_train_hate.txt'
+split_val =  'MMHS-lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -25,8 +25,10 @@ resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' 
 # evaluate = False # Evaluate model on validation set at start
 plot = True
 best_prec1 = 0
+best_loss = 100
 
-weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376
+
+weights = [0.45918, 1.0] #[0.32, 1.0] #0.3376 #0.41236 #0.45918
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'
@@ -79,15 +81,17 @@ model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 
 # optionally resume from a checkpoint
 if resume:
+    print("Loading pretrained model")
     if os.path.isfile(resume):
         print("=> loading checkpoint '{}'".format(resume))
         checkpoint = torch.load(resume)
-        start_epoch = checkpoint['epoch']
-        best_prec1 = checkpoint['best_prec1']
+        #start_epoch = checkpoint['epoch']
+        #best_prec1 = checkpoint['best_prec1']
         model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
-        print("=> loaded checkpoint '{}' (epoch {})"
-              .format(resume, checkpoint['epoch']))
+        #optimizer.load_state_dict(checkpoint['optimizer'])
+        #print("=> loaded checkpoint '{}' (epoch {})"
+              # .format(resume, checkpoint['epoch']))
+        print("Checkpoint loaded")
     else:
         print("=> no checkpoint found at '{}'".format(resume))
 
@@ -150,9 +154,16 @@ for epoch in range(start_epoch, epochs):
     # remember best prec@1 and save checkpoint
     is_best = plot_data['val_acc_avg'][epoch] > best_prec1
     if is_best and epoch != 0:
-        print("New best model. Prec1 = " + str(plot_data['val_acc_avg'][epoch]))
+        print("New best model. Val acc = " + str(plot_data['val_acc_avg'][epoch]))
         best_prec1 = max(plot_data['val_acc_avg'][epoch], best_prec1)
         t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])))
+
+    # Save checkpoint by loss
+    is_best = plot_data['val_loss'][epoch] < best_loss
+    if is_best and epoch != 0:
+        print("New best model by loss. Loss = " + str(plot_data['val_loss'][epoch]))
+        best_loss = plot_data['val_loss'][epoch]
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(float(plot_data['val_loss'][epoch])))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')

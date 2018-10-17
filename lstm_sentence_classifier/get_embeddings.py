@@ -16,11 +16,12 @@ torch.manual_seed(1)
 random.seed(1)
 # torch.cuda.set_device(0)
 
-target = 'img_text'
+target = 'train_nothate'
 split_name = 'tweets.' + target
-out_file_name = 'img_txt_embeddings/lstm_embeddings_' + target
+model_name = 'MMHS10K-v2mm_dataset_hidden_50_best_model_minibatch_acc_80' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
+out_file_name = 'tweet_embeddings/MMHS-v2mm-lstm_embeddings_' + target
 out_file = open("../../../datasets/HateSPic/HateSPic/" + out_file_name + ".txt",'w')
-split_folder = 'img_txt'
+split_folder = 'HateSPic_v2mm'
 
 classes =['hate','nothate']
 
@@ -58,7 +59,7 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = '../../../datasets/HateSPic/lstm_models/saved_hate_annotated_hidden_50_best_model_minibatch_acc_77.model'
+    model_path = '../../../datasets/HateSPic/lstm_models/' + model_name + '.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50
     BATCH_SIZE = 1

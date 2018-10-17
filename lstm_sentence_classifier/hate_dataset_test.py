@@ -80,21 +80,41 @@ class HD(data.Dataset):
         test_examples = cls(text_field, label_field, id_field, path=path, split_name=split_name, **kwargs).examples
 
         # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
+        # ANNOTATED
+        # fields = [('text', text_field), ('label', label_field), ('id', id_field)]
+        # train_examples = []
+        # train_path = "../../../datasets/HateSPic/lstm_data/annotated/"
+        # with codecs.open(os.path.join(train_path, 'tweets.hate'), 'r', 'utf8') as f:
+        #     train_examples += [
+        #         data.Example.fromlist([line, 'hate','0'], fields) for line in f]
+        # with codecs.open(os.path.join(train_path, 'tweets.nothate'), 'r', 'utf8') as f:
+        #     train_examples += [
+        #         data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
+        # with codecs.open(os.path.join(train_path, 'val_tweets.hate'), 'r', 'utf8') as f:
+        #     train_examples += [
+        #         data.Example.fromlist([line, 'hate','0'], fields) for line in f]
+        # with codecs.open(os.path.join(train_path, 'val_tweets.nothate'), 'r', 'utf8') as f:
+        #     train_examples += [
+        #         data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
+
+        # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
+        # MMHS10K
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
-        train_path = "../../../datasets/HateSPic/lstm_data/annotated/"
-        with codecs.open(os.path.join(train_path, 'tweets.hate'), 'r', 'utf8') as f:
+        train_path = "../../../datasets/HateSPic/lstm_data/HateSPic_v2mm/"
+        with codecs.open(os.path.join(train_path, 'tweets.train_hate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line, 'hate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'tweets.nothate'), 'r', 'utf8') as f:
+                data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'tweets.train_nothate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'val_tweets.hate'), 'r', 'utf8') as f:
+                data.Example.fromlist([line.split(',')[1], 'nothate','0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'tweets.val_hate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line, 'hate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'val_tweets.nothate'), 'r', 'utf8') as f:
+                data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'tweets.val_nothate'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
+                data.Example.fromlist([line.split(',')[1], 'nothate','0'], fields) for line in f]
+
 
         #random.shuffle(test_examples)
         print('num train samples (for vocab initialization):',len(train_examples))

@@ -6,7 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import hate_dataset
+# import hate_dataset
+import MMHS10K_dataset
 import os
 import random
 torch.set_num_threads(8)
@@ -51,14 +52,14 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def train():
-    id = 'hate_annotated_hidden_50_best_model_minibatch_acc_'
+    id = 'MMHS10K-v2mm_dataset_hidden_50_best_model_minibatch_acc_'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50 #50
     EPOCH = 100
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
-    train_iter, dev_iter = hate_dataset.load_HD(text_field, label_field, batch_size=BATCH_SIZE)
+    train_iter, dev_iter = MMHS10K_dataset.load_HD(text_field, label_field, batch_size=BATCH_SIZE)
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
     #text_field.vocab.load_vectors(wv_type='glove.6B', wv_dim=100)

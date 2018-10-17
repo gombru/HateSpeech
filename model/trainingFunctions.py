@@ -2,6 +2,8 @@ import shutil
 import time
 import torch
 import torch.nn.parallel
+import glob
+import os
 
 import torch.optim
 import torch.utils.data
@@ -149,6 +151,13 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
 
 def save_checkpoint(dataset, model, is_best, filename='checkpoint.pth.tar'):
+    print("Saving Checkpoint")
+    prefix = 16
+    if '_ValLoss_' in filename:
+        prefix = 30
+    for cur_filename in glob.glob(filename[:-prefix] + '*'):
+        print(cur_filename)
+        os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')
     # if is_best:
     #     shutil.copyfile(filename + '.pth.tar', filename + '_best.pth.tar')

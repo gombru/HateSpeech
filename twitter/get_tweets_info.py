@@ -12,7 +12,7 @@ from PIL import Image
 
 # -- CONFIG --
 # tweets_data_path = '../../../datasets/HateSPic/twitter/hard/raw/hate_tweets_1.txt'
-tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/tweets_all_16.txt'
+tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/tweets_all_22.txt'
 min_text_length = 4
 images_dir = '../../../datasets/HateSPic/twitter/img/'
 tweets_info_dir = '../../../datasets/HateSPic/twitter/json_7/'
@@ -31,84 +31,88 @@ def download_save_image(url, image_path):
 
 def process_tweet(line):
     # Discard short lines
-    if len(line) < min_text_length: return
-
     try:
-        t = json.loads(line)
-    except:
-        print "Failed to load tweet json, continuing"
-        return
+        if len(line) < min_text_length: return
 
-    # c += 1
-    # if c % 1000 == 0:
-    #     print "Num of tweets analyzed:" + str(c)
-    #     print "Num of images downloaded:" + str(i)
+        try:
+            t = json.loads(line)
+        except:
+            print "Failed to load tweet json, continuing"
+            return
 
-    # Discard tweets without mandatory fields
-    if not t.has_key(u'id'): return
-    if not t.has_key(u'text'): return
+        # c += 1
+        # if c % 1000 == 0:
+        #     print "Num of tweets analyzed:" + str(c)
+        #     print "Num of images downloaded:" + str(i)
 
-    # Discard retweets
-    if t.has_key('retweeted_status'): return;
+        # Discard tweets without mandatory fields
+        if not t.has_key(u'id'): return
+        if not t.has_key(u'text'): return
 
-    # Discard non-enlish
-    if not t.has_key('lang'): return
-    if t['lang'] != 'en': return;
+        # Discard retweets
+        if t.has_key('retweeted_status'): return;
 
-    # Discard short tweets
-    if len(t['text']) < min_text_length:
-        print "Text too short: " + t['text']
-        return
+        # Discard non-enlish
+        if not t.has_key('lang'): return
+        if t['lang'] != 'en': return;
 
-    # -- FILTER BY IMAGE AND SAVE IMAGES -- discard tweets without image
-    if t.has_key(u'id') and t.has_key(u'entities'):
+        # Discard short tweets
+        if len(t['text']) < min_text_length:
+            print "Text too short: " + t['text']
+            return
 
-        #Check if tweet has jpg image
-        if t['entities'].has_key(u'media'):
-            if t['entities']['media'][0]['type'] == u'photo':
-                if t['entities']['media'][0]['media_url'][-3:] != 'jpg':
-                    return
+        # -- FILTER BY IMAGE AND SAVE IMAGES -- discard tweets without image
+        if t.has_key(u'id') and t.has_key(u'entities'):
 
-                text = t['text'].encode("utf8", "ignore").replace('\n', ' ').replace('\r', ' ')
-
-                # Discard if containing words
-                for w in discard:
-                    if text.__contains__(w):
-                        # print "Discarding: " + text
+            #Check if tweet has jpg image
+            if t['entities'].has_key(u'media'):
+                if t['entities']['media'][0]['type'] == u'photo':
+                    if t['entities']['media'][0]['media_url'][-3:] != 'jpg':
                         return
 
+                    text = t['text'].encode("utf8", "ignore").replace('\n', ' ').replace('\r', ' ')
 
-                image_path = images_dir + '/' + str(t['id']) + ".jpg"
-                # Check if file already exists
-                if os.path.isfile(image_path):
-                    print "Image already exists"
-                    return
-
-                # Download image
-                try:
-                    download_save_image(t['entities']['media'][0]['media_url'], image_path)
-                    # Check image can be opened
-                    im = Image.open(image_path)
-                except:
-                    if os.path.exists(image_path):
-                        os.remove(image_path) #Remove the corrupted file
-                    print "Failed downloading image from: " + t['entities']['media'][0]['media_url']
-                    return
-
-                info = {}
-                info['id'] = t['id']
-                info['img_url'] = t['entities']['media'][0]['media_url']
-                info['text'] = text
-                info['dataset'] = 'HateSPic'
-                info['hate_votes'] = 0
-                info['not_hate_votes'] = 0
-                info['voters'] = 0
-                info['HateSPiclabeler_annotation'] = None
-                info['original_annotation'] = None
+                    # Discard if containing words
+                    for w in discard:
+                        if text.__contains__(w):
+                            # print "Discarding: " + text
+                            return
 
 
-                with open(tweets_info_dir + '/' +str(t['id']) + '.json', "w") as outfile:
-                    json.dump(info, outfile)
+                    image_path = images_dir + '/' + str(t['id']) + ".jpg"
+                    # Check if file already exists
+                    if os.path.isfile(image_path):
+                        print "Image already exists"
+                        return
+
+                    # Download image
+                    try:
+                        download_save_image(t['entities']['media'][0]['media_url'], image_path)
+                        # Check image can be opened
+                        im = Image.open(image_path)
+                    except:
+                        if os.path.exists(image_path):
+                            os.remove(image_path) #Remove the corrupted file
+                        print "Failed downloading image from: " + t['entities']['media'][0]['media_url']
+                        return
+
+                    info = {}
+                    info['id'] = t['id']
+                    info['img_url'] = t['entities']['media'][0]['media_url']
+                    info['text'] = text
+                    info['dataset'] = 'HateSPic'
+                    info['hate_votes'] = 0
+                    info['not_hate_votes'] = 0
+                    info['voters'] = 0
+                    info['HateSPiclabeler_annotation'] = None
+                    info['original_annotation'] = None
+
+
+                    with open(tweets_info_dir + '/' +str(t['id']) + '.json', "w") as outfile:
+                        json.dump(info, outfile)
+    except:
+        print("Unknown error")
+        return
 
 
 

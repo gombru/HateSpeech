@@ -17,10 +17,11 @@ random.seed(1)
 # torch.cuda.set_device(0)
 
 target = 'test'
-out_file_name = 'lstm_scores'
+out_file_name = 'MMHS10K-v2mm_lstm_scores'
 split_name = 'tweets.' + target
 out_file = open("../../../datasets/HateSPic/twitter/" + out_file_name + ".txt",'w')
 split_folder = 'twitter'
+model_name = 'MMHS10K-v2mm_dataset_hidden_50_best_model_minibatch_acc_80' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
 
 classes =['hate','nothate']
 
@@ -58,7 +59,7 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = '../../../datasets/HateSPic/lstm_models/saved_hate_annotated_hidden_50_best_model_minibatch_acc_77.model'
+    model_path = '../../../datasets/HateSPic/lstm_models/' + model_name + '.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 50
     BATCH_SIZE = 1
