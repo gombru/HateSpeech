@@ -7,7 +7,7 @@ dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split = 'MMHS-v2mm-lstm_embeddings_test_hate.txt'
 batch_size = 32
 workers = 6
-model_name = 'MMHS-v2mm_TKM-10-5-TextConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_51_ValAcc_79'
+model_name = 'MMHSv2mm_TKM-20-10_TxtConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInit_epoch_36_ValAcc_79'
 
 gpus = [0]
 gpu = 0
