@@ -109,11 +109,11 @@ class myInception3(nn.Module):
         if self.training and self.aux_logits:
             aux = self.AuxLogits(x)
         # 17 x 17 x 768
-        x = self.Mixed_7a(x)
+        #x = self.Mixed_7a(x)
         # 8 x 8 x 1280
-        x = self.Mixed_7b(x)
+        #x = self.Mixed_7b(x)
         # 8 x 8 x 2048
-        x = self.Mixed_7c(x)
+        #x = self.Mixed_7c(x)
         # 8 x 8 x 2048
         # x = F.avg_pool2d(x, kernel_size=8)
         # # 1 x 1 x 2048

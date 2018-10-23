@@ -7,7 +7,7 @@ dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split = 'MMHS-v2mm-lstm_embeddings_test_hate.txt'
 batch_size = 32
 workers = 6
-model_name = 'MMHSv2mm_TKM-20-10_TxtConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInit_epoch_36_ValAcc_79'
+model_name = 'MMHSv2mm_TKM-v2-CK-10-5-NoConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_5_ValAcc_79_ValLoss_0.47'
 
 gpus = [0]
 gpu = 0
@@ -22,6 +22,7 @@ output_file = open(output_file_path, "w")
 if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
     state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 else:
+    state_dict = torch.load(dataset + '/models_loss/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
     print("no checkpoint found")
 
 model = mymodel.MyModel()

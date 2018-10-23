@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHSv2mm_TKM-CK-10-5-NoConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+training_id = 'MMHSv2mm_TKM-v2-CK-10-5-NoConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
 split_train = 'MMHS-v2mm-lstm_embeddings_train_hate.txt'
 split_val =  'MMHS-v2mm-lstm_embeddings_val_hate.txt'
