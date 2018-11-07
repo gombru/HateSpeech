@@ -109,23 +109,39 @@ class myInception3(nn.Module):
         if self.training and self.aux_logits:
             aux = self.AuxLogits(x)
         # 17 x 17 x 768
-        #x = self.Mixed_7a(x)
+        x = self.Mixed_7a(x)
         # 8 x 8 x 1280
-        #x = self.Mixed_7b(x)
+        x = self.Mixed_7b(x)
         # 8 x 8 x 2048
-        #x = self.Mixed_7c(x)
+        x = self.Mixed_7c(x)
         # 8 x 8 x 2048
-        # x = F.avg_pool2d(x, kernel_size=8)
+        x = F.avg_pool2d(x, kernel_size=8)
         # # 1 x 1 x 2048
-        # x = F.dropout(x, training=self.training)
+        x = F.dropout(x, training=self.training)
         # # 1 x 1 x 2048
-        # x = x.view(x.size(0), -1)
+        x = x.view(x.size(0), -1)
         # 2048
         #x = self.fc(x) # RAUl
         # 1000 (num_classes)
+
+        # Additional Head
+        # 17 x 17 x 768
+        # x2 = self.Mixed_7a(x)
+        # # 8 x 8 x 1280
+        # x2 = self.Mixed_7b(x2)
+        # # 8 x 8 x 2048
+        # x2 = self.Mixed_7c(x2)
+        # # 8 x 8 x 2048
+        # x2 = F.avg_pool2d(x2, kernel_size=8)
+        # # # 1 x 1 x 2048
+        # x2 = F.dropout(x2, training=self.training)
+        # # # 1 x 1 x 2048
+        # x2 = x2.view(x.size(0), -1)
+        # # 2048
+
         if self.training and self.aux_logits:
             return x, aux
-        return x
+        return x#, x2
 
 
 class InceptionA(nn.Module):

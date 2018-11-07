@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHSv2mm_TKM-v2-CK-10-5-NoConcat_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+training_id = 'MMHS_niggaFaggot_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
-split_train = 'MMHS-v2mm-lstm_embeddings_train_hate.txt'
-split_val =  'MMHS-v2mm-lstm_embeddings_val_hate.txt'
+split_train = 'MMHS-niggaFaggot-lstm_embeddings_train_hate.txt'
+split_val =  'MMHS-niggaFaggot-lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -21,15 +21,16 @@ epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
 print_freq = 1
-# resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
+resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start
-resume = dataset + 'models/FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_130_ValAcc_62.pth.tar'
+# resume = dataset + 'models/FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_130_ValAcc_62.pth.tar'
+# resume = dataset + 'models/MMHSv3mm_SAVED_FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_118_ValAcc_61.pth.tar'
 plot = True
 best_prec1 = 0
 best_loss = 100
 
 
-weights = [0.41236, 1.0] #[0.32, 1.0] #0.3376 #0.41236 #0.45918
+weights = [0.745, 1.0] #[0.32, 1.0] #0.3376 #0.41236 #0.45918 # --> 0.745 in nigga faggot
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'
