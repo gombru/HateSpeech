@@ -1,7 +1,7 @@
 import random
 
-ids_file_path = '../../../datasets/HateSPic/AMT/ids_30_amt_test.csv'
-out_file_path = '../../../datasets/HateSPic/AMT/30_amt_test.csv'
+ids_file_path = '../../../datasets/HateSPic/AMT/ids_50000_amt.csv'
+out_file_path = '../../../datasets/HateSPic/AMT/50000_amt.csv'
 
 
 ids = open(ids_file_path).read().split("\n")
