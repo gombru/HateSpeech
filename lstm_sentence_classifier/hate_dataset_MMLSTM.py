@@ -31,7 +31,7 @@ class HD(data.Dataset):
     def sort_key(ex):
         return len(ex.text)
 
-    def __init__(self, text_field, label_field, path=None, examples=None, split=None, **kwargs):
+    def __init__(self, text_field, label_field, img_txts=None, path=None, examples=None, split=None, **kwargs):
         """Create an Emotion Dataset instance given a path and fields.
         Arguments:
             text_field: The field that will be used for text data.
@@ -48,26 +48,54 @@ class HD(data.Dataset):
             examples = []
 
             if split == 'train':
-                with codecs.open(os.path.join(path, 'tweets.hate'),'r','utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line, 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'tweets.nothate'),'r','utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line, 'nothate'], fields) for line in f]
+                with codecs.open(os.path.join(path, 'tweets.train_hate'),'r','utf8') as f:
+                    for line in f:
+                        if int(line.split(',')[0]) in img_txts:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0] + ' text ' + img_txts[int(line.split(',')[0])]
+                        else:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0]
+                        examples.append(data.Example.fromlist([words,'hate'], fields))
+
+                with codecs.open(os.path.join(path, 'tweets.train_nothate'),'r','utf8') as f:
+                    for line in f:
+                        if int(line.split(',')[0]) in img_txts:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0] + ' text ' + img_txts[
+                                int(line.split(',')[0])]
+                        else:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0]
+                        examples.append(data.Example.fromlist([words, 'nothate'], fields))
 
             if split == 'val':
-                with codecs.open(os.path.join(path, 'val_tweets.hate'), 'r', 'utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line, 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'val_tweets.nothate'), 'r', 'utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line, 'nothate'], fields) for line in f]
+                with codecs.open(os.path.join(path, 'tweets.val_hate'), 'r', 'utf8') as f:
+                    for line in f:
+                        if int(line.split(',')[0]) in img_txts:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0] + ' text ' + img_txts[
+                                int(line.split(',')[0])]
+                        else:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0]
+                        examples.append(data.Example.fromlist([words, 'hate'], fields))
+
+                with codecs.open(os.path.join(path, 'tweets.val_nothate'), 'r', 'utf8') as f:
+                    for line in f:
+                        if int(line.split(',')[0]) in img_txts:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0] + ' text ' + img_txts[
+                                int(line.split(',')[0])]
+                        else:
+                            words = line.split(',')[1] + ' image ' + line.split(',')[0]
+                        examples.append(data.Example.fromlist([words, 'nothate'], fields))
+
+            if split == 'all_img_ids':
+                all_img_ids = ''
+                image_features_path = '../../../datasets/HateSPic/HateSPic/img_embeddings/MMHSv3mm_ImageEmbeddings200_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_160_ValAcc_62_ValLoss_0.65.txt'
+                for line in open(image_features_path, 'r'):
+                    all_img_ids += line.split(',')[0] + ' '
+                examples.append(data.Example.fromlist([all_img_ids, 'hate'], fields))
 
 
         super(HD, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/lstm_data/annotated/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/lstm_data/HateSPic_v3mm/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.
@@ -81,10 +109,22 @@ class HD(data.Dataset):
             Remaining keyword arguments: Passed to the splits method of
                 Dataset.
         """
-        train_examples = cls(text_field, label_field, path=path, split='train', **kwargs).examples
+
+        # LOAD image texts
+        img_txt_path = '../../../datasets/HateSPic/lstm_data/img_txt/tweets.img_text'
+        img_txts = {}
+        for line in open(img_txt_path,'r'):
+            id = int(line.strip(',')[0])
+            text = line.strip(',')[1].replace('\n', '').replace('\r', '')
+            img_txts[id] = text
+
+        # LOAD img_ids vocab to have them in vocab
+        all_img_ids_examples = cls(text_field, label_field, img_txts = img_txts, path=path, split='all_img_ids', **kwargs).examples
+
+        train_examples = cls(text_field, label_field, img_txts = img_txts, path=path, split='train', **kwargs).examples
         if shuffle: random.shuffle(train_examples)
 
-        dev_examples = cls(text_field, label_field, path=path, split='val', **kwargs).examples
+        dev_examples = cls(text_field, label_field, img_txts = img_txts, path=path, split='val', **kwargs).examples
         if shuffle: random.shuffle(dev_examples)
 
         # dev_index = int(len(examples) - 0.05 * len(examples))
@@ -94,12 +134,13 @@ class HD(data.Dataset):
         # random.shuffle(dev_examples)
 
         print('train:',len(train_examples),'dev:',len(dev_examples))
-        return cls(text_field, label_field, examples=train_examples), cls(text_field, label_field, examples=dev_examples)
+        return cls(text_field, label_field, examples=train_examples), cls(text_field, label_field, examples=dev_examples), cls(text_field, label_field, examples=all_img_ids_examples)
 
 def load_HD(text_field, label_field, batch_size):
     print('loading data')
-    train_data, dev_data = HD.splits(text_field, label_field)
-    text_field.build_vocab(train_data, dev_data)
+    train_data, dev_data, all_img_ids_data = HD.splits(text_field, label_field)
+    text_field.build_vocab(train_data, dev_data, all_img_ids_data)
+    print("Img ids added to vocab")
     label_field.build_vocab(train_data, dev_data)
     print('Size vocab: ' + str(len(text_field.vocab.itos)))
 

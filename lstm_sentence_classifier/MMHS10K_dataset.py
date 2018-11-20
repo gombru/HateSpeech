@@ -67,7 +67,7 @@ class HD(data.Dataset):
         super(HD, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/lstm_data/HateSPic_v2mm/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/lstm_data/HateSPic_niggaFaggot/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.

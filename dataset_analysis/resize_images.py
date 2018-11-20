@@ -4,8 +4,8 @@ from joblib import Parallel, delayed
 import os
 
 
-images_path = '../../../datasets/HateSPic/HateSPic/img/'
-im_dest_path = '../../../datasets/HateSPic/HateSPic/img_resized/'
+images_path = '../../../datasets/HateSPic/AMT/50K/img/'
+im_dest_path = '../../../datasets/HateSPic/AMT/50K/img_resized/'
 
 minSize = 500
 

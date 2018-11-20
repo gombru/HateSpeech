@@ -16,12 +16,12 @@ torch.manual_seed(1)
 random.seed(1)
 # torch.cuda.set_device(0)
 
-target = 'train_nothate'
+target = 'val_hate'
 split_name = 'tweets.' + target
-model_name = 'MMHS10K-v2mm_dataset_hidden_50_best_model_minibatch_acc_80' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
-out_file_name = 'tweet_embeddings/MMHS-v2mm-lstm_embeddings_' + target
+model_name = 'MMHS_niggaFaggot_hidden_150_embedding_100_best_model_minibatch_acc_test77' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
+out_file_name = 'tweet_embeddings/MMHS-niggaFaggot-lstm_embeddings_' + target
 out_file = open("../../../datasets/HateSPic/HateSPic/" + out_file_name + ".txt",'w')
-split_folder = 'HateSPic_v2mm'
+split_folder = 'HateSPic_niggaFaggot'
 
 classes =['hate','nothate']
 
@@ -61,7 +61,7 @@ def get_accuracy(truth, pred):
 def test():
     model_path = '../../../datasets/HateSPic/lstm_models/' + model_name + '.model'
     EMBEDDING_DIM = 100
-    HIDDEN_DIM = 50
+    HIDDEN_DIM = 150
     BATCH_SIZE = 1
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
@@ -108,7 +108,7 @@ def evaluate(model, split_iter):
 
 
         # Get embedding stre
-        embedding = np.zeros(50)
+        embedding = np.zeros(150)
         for c,d in enumerate(hidden[0][0,0,:]):
             embedding[c] = d.data[0]
         embeddingString = ""

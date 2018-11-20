@@ -11,14 +11,14 @@ class MyModel(nn.Module):
 
         super(MyModel, self).__init__()
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = ImageEmbeddings(gpu)
+        self.mm = MultiModalNetSpacialConcatSameDim(gpu)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
 
-        xmm = self.cnn(image) # * 0 # CNN
-        x2 = img_text  * 0  # Img Text Input
-        x3 = tweet  * 0   # Tweet Text Input
+        xmm = self.cnn(image) #* 0 # CNN
+        x2 = img_text  #* 0  # Img Text Input
+        x3 = tweet  #* 0   # Tweet Text Input
         x = self.mm(xmm, x2, x3)#, xi)  # Multimodal net
         return x
 
@@ -46,7 +46,7 @@ class MultiModalNetConcat(nn.Module):
         super(MultiModalNetConcat, self).__init__()
 
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
 
         # ARCH-1 4fc
         # self.fc1 = BasicFC(2048 +  self.lstm_hidden_state_dim * 2, 2048 + self.lstm_hidden_state_dim * 2)
@@ -57,8 +57,8 @@ class MultiModalNetConcat(nn.Module):
         # ARCH-1 4fc same dimensions
         # Unimodal
         self.cnn_fc1 = BasicFC(2048, 1024)
-        self.img_text_fc1 = BasicFC(50, 1024)
-        self.tweet_text_fc1 = BasicFC(50, 1024)
+        self.img_text_fc1 = BasicFC(self.lstm_hidden_state_dim, 1024)
+        self.tweet_text_fc1 = BasicFC(self.lstm_hidden_state_dim, 1024)
 
         # Multimodal
         self.fc1 = BasicFC(1024*3, 2048)
@@ -92,14 +92,14 @@ class MultiModalNetSpacialConcat(nn.Module):
         super(MultiModalNetSpacialConcat, self).__init__()
 
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
 
         # Create the linear layers that will process both the img and the txt
         self.MM_InceptionE_1 = InceptionE(2148)
         self.MM_InceptionE_2 = InceptionE(2048)
-        self.fc1_sc = BasicFC(2048, 1024)
-        self.fc2_sc = BasicFC(1024, 512)
-        self.fc3_sc = nn.Linear(512, self.num_classes)
+        self.fc1_mm = BasicFC(2048, 1024)
+        self.fc2_mm = BasicFC(1024, 512)
+        self.fc3_mm = nn.Linear(512, self.num_classes)
 
 
     def forward(self, x1, x2, x3):
@@ -123,9 +123,9 @@ class MultiModalNetSpacialConcat(nn.Module):
 
         # Reshape and FC layers
         x = x.view(x.size(0), -1) # 2048
-        x = self.fc1_sc(x)  # 1024
-        x = self.fc2_sc(x) # 512
-        x = self.fc3_sc(x)# 2
+        x = self.fc1_mm(x)  # 1024
+        x = self.fc2_mm(x) # 512
+        x = self.fc3_mm(x)# 2
 
         return x
 
@@ -136,17 +136,17 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
         super(MultiModalNetSpacialConcatSameDim, self).__init__()
 
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
 
         # Unimodal
-        self.img_text_fc1_sc = BasicFC(50, 2048)
-        self.tweet_text_fc1_sc = BasicFC(50, 2048)
+        self.img_text_fc1_sc = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.tweet_text_fc1_sc = BasicFC(self.lstm_hidden_state_dim, 2048)
 
         self.MM_InceptionE_1 = InceptionE(2048*3)
         self.MM_InceptionE_2 = InceptionE(2048)
-        self.fc1 = BasicFC(2048, 1024)
-        self.fc2 = BasicFC(1024, 512)
-        self.fc3 = nn.Linear(512, self.num_classes)
+        self.fc1_mm = BasicFC(2048, 1024)
+        self.fc2_mm = BasicFC(1024, 512)
+        self.fc3_mm = nn.Linear(512, self.num_classes)
 
 
     def forward(self, x1, x2, x3):
@@ -175,9 +175,9 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
 
         # Reshape and FC layers
         x = x.view(x.size(0), -1) # 2048
-        x = self.fc1(x) # 1024
-        x = self.fc2(x) # 512
-        x = self.fc3(x)# 2
+        x = self.fc1_mm(x) # 1024
+        x = self.fc2_mm(x) # 512
+        x = self.fc3_mm(x)# 2
 
         return x
 
@@ -187,7 +187,7 @@ class MultiModalNetTextualKernels(nn.Module):
         super(MultiModalNetTextualKernels, self).__init__()
         # Create the linear layers that will process both the img and the txt
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
         self.gpu = gpu
@@ -325,7 +325,7 @@ class MultiModalNetTextualKernels_NoVisual(nn.Module):
         super(MultiModalNetTextualKernels_NoVisual, self).__init__()
         # Create the linear layers that will process both the img and the txt
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 20 #10
         self.num_imgTxt_kernels = 10 #5
         self.gpu = gpu
@@ -364,7 +364,7 @@ class MultiModalNetTextualKernels_NoVisual(nn.Module):
 
         self.bn_mm_info = nn.BatchNorm2d(self.num_tweetTxt_kernels + self.num_imgTxt_kernels, eps=0.001)
 
-        self.MM_InceptionE_1 = InceptionE(self.num_tweetTxt_kernels + self.num_imgTxt_kernels + 100)
+        self.MM_InceptionE_1 = InceptionE(self.num_tweetTxt_kernels + self.num_imgTxt_kernels + self.lstm_hidden_state_dim*2)
         self.MM_InceptionE_2 = InceptionE(2048)
 
         self.fc1_mm = BasicFC(2048, 1024)
@@ -649,7 +649,7 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
         super(MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels, self).__init__()
         # Create the linear layers that will process both the img and the txt
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
         self.gpu = gpu

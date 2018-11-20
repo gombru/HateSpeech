@@ -18,7 +18,7 @@ class customDatasetTest(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.Rescale = Rescale
-        self.hidden_state_dim = 50
+        self.hidden_state_dim = 150
 
         # Count number of elements
         print("Split: " + split)
@@ -34,7 +34,7 @@ class customDatasetTest(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/MMHS-v3mm-lstm_embeddings_img_text.txt')):
+        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/MMHS-niggaFaggot-lstm_embeddings_img_text.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
@@ -109,8 +109,8 @@ class customDatasetTest(Dataset):
         label = label.type(torch.LongTensor)
 
         # Set text embedding to 0!
-        self.img_texts[idx] = np.zeros(self.hidden_state_dim)
-        self.tweets[idx] = np.zeros(self.hidden_state_dim)
+        #self.img_texts[idx] = np.zeros(self.hidden_state_dim)
+        #self.tweets[idx] = np.zeros(self.hidden_state_dim)
 
         # Set image to 0!
         #out_img = np.zeros((3, 299, 299), dtype=np.float32)

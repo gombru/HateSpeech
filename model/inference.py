@@ -4,10 +4,11 @@ import os
 import mymodel
 
 dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
-split = 'MMHS-v3mm-lstm_embeddings_test_hate.txt'
+split = 'MMHS-niggaFaggot-lstm_embeddings_test_hate.txt'
+
 batch_size = 32
 workers = 6
-model_name = 'MMHSv3mm_SAVED_FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_118_ValAcc_61'
+model_name = 'MMHS_niggaFaggot_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInit_epoch_276_ValAcc_81'
 
 gpus = [0]
 gpu = 0
@@ -22,7 +23,7 @@ output_file = open(output_file_path, "w")
 if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
     state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 else:
-    state_dict = torch.load(dataset + '/models_loss/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
+    state_dict = torch.load(dataset + '/models_niggaFaggot/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
     print("no checkpoint found")
 
 model = mymodel.MyModel()

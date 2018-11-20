@@ -101,7 +101,7 @@ class HD(data.Dataset):
         # MMHS10K
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
-        train_path = "../../../datasets/HateSPic/lstm_data/HateSPic_v2mm/"
+        train_path = "../../../datasets/HateSPic/lstm_data/HateSPic_niggaFaggot/"
         with codecs.open(os.path.join(train_path, 'tweets.train_hate'), 'r', 'utf8') as f:
             train_examples += [
                 data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
