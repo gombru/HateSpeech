@@ -1,31 +1,10 @@
-import re
 import os
 import random
 import codecs
 from torchtext import data
 
-# def clean_str(string):
-#     """
-#     Tokenization/string cleaning for all datasets except for SST.
-#     Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
-#     """
-#     string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
-#     string = re.sub(r"\'s", " \'s", string)
-#     string = re.sub(r"\'ve", " \'ve", string)
-#     string = re.sub(r"n\'t", " n\'t", string)
-#     string = re.sub(r"\'re", " \'re", string)
-#     string = re.sub(r"\'d", " \'d", string)
-#     string = re.sub(r"\'ll", " \'ll", string)
-#     string = re.sub(r",", " , ", string)
-#     string = re.sub(r"!", " ! ", string)
-#     string = re.sub(r"\(", " \( ", string)
-#     string = re.sub(r"\)", " \) ", string)
-#     string = re.sub(r"\?", " \? ", string)
-#     string = re.sub(r"\s{2,}", " ", string)
-#     return string.strip()
 
-
-class HD(data.Dataset):
+class MMHS50K(data.Dataset):
 
     @staticmethod
     def sort_key(ex):
@@ -64,10 +43,10 @@ class HD(data.Dataset):
                         data.Example.fromlist([line.split(',')[1], 'nothate'], fields) for line in f]
 
 
-        super(HD, self).__init__(examples, fields, **kwargs)
+        super(MMHS50K, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/lstm_data/HateSPic_niggaFaggot/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS50K/lstm_data/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.
@@ -96,9 +75,9 @@ class HD(data.Dataset):
         print('train:',len(train_examples),'dev:',len(dev_examples))
         return cls(text_field, label_field, examples=train_examples), cls(text_field, label_field, examples=dev_examples)
 
-def load_HD(text_field, label_field, batch_size):
+def load_MMHS50K(text_field, label_field, batch_size):
     print('loading data')
-    train_data, dev_data = HD.splits(text_field, label_field)
+    train_data, dev_data = MMHS50K.splits(text_field, label_field)
     text_field.build_vocab(train_data, dev_data)
     label_field.build_vocab(train_data, dev_data)
     print('Size vocab: ' + str(len(text_field.vocab.itos)))

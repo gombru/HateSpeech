@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import MMHS10K_dataset
+import MMHS50K_dataset
 # import hate_dataset_MMLSTM
 import os
 import random
@@ -16,7 +16,7 @@ random.seed(1)
 #torch.cuda.set_device(0)
 import torch.utils.data as Data
 
-base_path = "../../../datasets/HateSPic/lstm_models/"
+base_path = "../../../datasets/HateSPic/MMHS50K/lstm_models/"
 
 class LSTMClassifier(nn.Module):
 
@@ -52,16 +52,16 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def train():
-    id = 'MMHS_niggaFaggot_hidden_150_embedding_100_best_model_minibatch_acc_test'
-    EMBEDDING_DIM = 100
+    id = 'MMHS50K_hidden_150_embedding_200_best_model_acc_val'
+    EMBEDDING_DIM = 200
     HIDDEN_DIM = 150 #50 #150
     EPOCH = 100
     BATCH_SIZE = 10
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
-    train_iter, dev_iter = MMHS10K_dataset.load_HD(text_field, label_field, batch_size=BATCH_SIZE)
+    train_iter, dev_iter = MMHS50K_dataset.load_MMHS50K(text_field, label_field, batch_size=BATCH_SIZE)
 
-    text_field.vocab.load_vectors('glove.twitter.27B.100d') #mmhsv3_glove.twitter.27B.200d
+    text_field.vocab.load_vectors('glove.twitter.27B.200d') #mmhsv3_glove.twitter.27B.200d
     #text_field.vocab.load_vectors(wv_type='glove.6B', wv_dim=100)
 
     best_dev_acc = 0.0
