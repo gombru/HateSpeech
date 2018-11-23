@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS_niggaFaggot_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
-dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
-split_train = 'MMHS-niggaFaggot-lstm_embeddings_train_hate.txt'
-split_val =  'MMHS-niggaFaggot-lstm_embeddings_val_hate.txt'
+training_id = 'MMHS50K_FCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
+split_train = 'tweets.train_hate.txt'
+split_val =  'tweets.val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -30,7 +30,7 @@ best_prec1 = 0
 best_loss = 100
 
 
-weights = [0.745, 1.0] #[0.32, 1.0] #0.3376 #0.41236 #0.45918 # --> 0.745 in nigga faggot
+weights = [0.7759, 1.0] #[0.7759, 1.0]
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'
@@ -158,14 +158,14 @@ for epoch in range(start_epoch, epochs):
     if is_best and epoch != 0:
         print("New best model. Val acc = " + str(plot_data['val_acc_avg'][epoch]))
         best_prec1 = max(plot_data['val_acc_avg'][epoch], best_prec1)
-        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])))
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/MMCNN_models/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])))
 
     # Save checkpoint by loss
     is_best = plot_data['val_loss'][epoch] < best_loss
     if is_best and epoch != 0:
         print("New best model by loss. Loss = " + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
-        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/MMCNN_models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
@@ -187,6 +187,6 @@ for epoch in range(start_epoch, epochs):
         plt.pause(0.001)
 
         if epoch % 10 == 0 and epoch != 0:
-            title = dataset +'/models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
+            title = dataset +'/MMCNN_models/training/' + training_id + '_epoch_' + str(epoch) + '.png'  # Save graph to disk
             savefig(title, bbox_inches='tight')
 

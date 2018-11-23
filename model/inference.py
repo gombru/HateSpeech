@@ -3,8 +3,8 @@ import customDatasetTest
 import os
 import mymodel
 
-dataset = '../../../datasets/HateSPic/HateSPic/' # Path to dataset
-split = 'MMHS-niggaFaggot-lstm_embeddings_test_hate.txt'
+dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
+split = 'MMHS50K_lstm_embeddings_test_hate.txt'
 
 batch_size = 32
 workers = 6
@@ -20,10 +20,10 @@ if not os.path.exists(dataset + 'results/' + model_name):
 output_file_path = dataset + 'results/' + model_name + '/test.txt'
 output_file = open(output_file_path, "w")
 
-if os.path.isfile(dataset + '/models/' + model_name + '.pth.tar'):
-    state_dict = torch.load(dataset + '/models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+if os.path.isfile(dataset + '/MMCNN_models/' + model_name + '.pth.tar'):
+    state_dict = torch.load(dataset + '/MMCNN_models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 else:
-    state_dict = torch.load(dataset + '/models_niggaFaggot/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
+    state_dict = torch.load(dataset + '/MMCNN_models_loss/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
     print("no checkpoint found")
 
 model = mymodel.MyModel()

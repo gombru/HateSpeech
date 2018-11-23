@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'img_txt_embeddings/MMHS-niggaFaggot-lstm_embeddings_img_text.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_lstm_embeddings_img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
@@ -126,11 +126,13 @@ class CustomDataset(Dataset):
         label = label.type(torch.LongTensor)
 
         # Set text embedding to 0!
-        self.img_texts[idx] = np.zeros(self.hidden_state_dim)
-        self.tweets[idx] = np.zeros(self.hidden_state_dim)
+        # self.img_texts[idx] = np.zeros(self.hidden_state_dim)
+        # self.tweets[idx] = np.zeros(self.hidden_state_dim)
+        # print("Setting text embeddings to 0!")
 
         # Set image to 0!
-        out_img = np.zeros((3, 299, 299), dtype=np.float32)
+        # out_img = np.zeros((3, 299, 299), dtype=np.float32)
+        # print("Setting IMG to 0!")
 
         # Multilabel / Regression
         img_text = torch.from_numpy(np.array(self.img_texts[idx]))
