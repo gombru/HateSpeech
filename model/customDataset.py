@@ -87,7 +87,7 @@ class CustomDataset(Dataset):
             image = Image.open(img_name)
             # print("FOUND " + img_name)
         except:
-            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
+            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + img_name)
             image = Image.open(img_name)
 
@@ -109,8 +109,9 @@ class CustomDataset(Dataset):
             im_np = customTransform.PreprocessImage(im_np)
 
         except:
-            img_name = '../../../datasets/HateSPic/HateSPic/img_resized/1011278006608912384.jpg'
-            print("Error on data aumentation, using hardcoded: " + img_name)
+            print("Error in data aumentation with image " + img_name)
+            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
+            print("Using hardcoded: " + img_name)
             image = Image.open(img_name)
             if self.RandomCrop != 0:
                 image = customTransform.RandomCrop(image,self.RandomCrop)
@@ -128,11 +129,9 @@ class CustomDataset(Dataset):
         # Set text embedding to 0!
         # self.img_texts[idx] = np.zeros(self.hidden_state_dim)
         # self.tweets[idx] = np.zeros(self.hidden_state_dim)
-        # print("Setting text embeddings to 0!")
 
         # Set image to 0!
         # out_img = np.zeros((3, 299, 299), dtype=np.float32)
-        # print("Setting IMG to 0!")
 
         # Multilabel / Regression
         img_text = torch.from_numpy(np.array(self.img_texts[idx]))

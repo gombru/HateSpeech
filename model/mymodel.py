@@ -11,14 +11,14 @@ class MyModel(nn.Module):
 
         super(MyModel, self).__init__()
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = MultiModalNetSpacialConcatSameDim(gpu)
+        self.mm = MultiModalNetConcat(gpu)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
 
-        xmm = self.cnn(image) #* 0 # CNN
-        x2 = img_text  #* 0  # Img Text Input
-        x3 = tweet  #* 0   # Tweet Text Input
+        xmm = self.cnn(image)  * 0 # CNN
+        x2 = img_text  # * 0  # Img Text Input
+        x3 = tweet  # * 0   # Tweet Text Input
         x = self.mm(xmm, x2, x3)#, xi)  # Multimodal net
         return x
 
@@ -46,7 +46,7 @@ class MultiModalNetConcat(nn.Module):
         super(MultiModalNetConcat, self).__init__()
 
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
+        self.lstm_hidden_state_dim = 50
 
         # ARCH-1 4fc
         # self.fc1 = BasicFC(2048 +  self.lstm_hidden_state_dim * 2, 2048 + self.lstm_hidden_state_dim * 2)
@@ -136,7 +136,7 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
         super(MultiModalNetSpacialConcatSameDim, self).__init__()
 
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
+        self.lstm_hidden_state_dim = 50
 
         # Unimodal
         self.img_text_fc1_sc = BasicFC(self.lstm_hidden_state_dim, 2048)
@@ -325,7 +325,7 @@ class MultiModalNetTextualKernels_NoVisual(nn.Module):
         super(MultiModalNetTextualKernels_NoVisual, self).__init__()
         # Create the linear layers that will process both the img and the txt
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
+        self.lstm_hidden_state_dim = 50
         self.num_tweetTxt_kernels = 20 #10
         self.num_imgTxt_kernels = 10 #5
         self.gpu = gpu
@@ -513,15 +513,13 @@ class MultiModalNetTextualKernels_NoVisual(nn.Module):
         x = self.fc3_mm(x) # 2
 
         return x
-
-
 class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
     # CNN input size: 8 x 8 x 2048
     def __init__(self, gpu):
         super(MultiModalNetTextualKernels_NoVisual_NoTextual, self).__init__()
         # Create the linear layers that will process both the img and the txt
         self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
+        self.lstm_hidden_state_dim = 50
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
         self.gpu = gpu
@@ -640,7 +638,6 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
         x = self.fc3_mm(x) # 2
 
         return x
-
 
 
 class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):

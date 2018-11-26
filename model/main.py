@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_FCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+training_id = 'MMHS50K_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split_train = 'tweets.train_hate.txt'
-split_val =  'tweets.val_hate.txt'
+split_train = 'MMHS50K_lstm_embeddings_train_hate.txt'
+split_val =  'MMHS50K_lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0

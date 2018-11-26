@@ -6,13 +6,13 @@ import mymodel
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
 split = 'MMHS50K_lstm_embeddings_test_hate.txt'
 
-batch_size = 32
+batch_size = 128
 workers = 6
-model_name = 'MMHS_niggaFaggot_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInit_epoch_276_ValAcc_81'
+model_name = 'MMHS50K_FCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_76_ValAcc_61'
 
 gpus = [0]
 gpu = 0
-CUDA_VISIBLE_DEVICES=0
+CUDA_VISIBLE_DEVICES = 0
 
 if not os.path.exists(dataset + 'results/' + model_name):
     os.makedirs(dataset + 'results/' + model_name)
