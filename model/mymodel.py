@@ -10,16 +10,20 @@ class MyModel(nn.Module):
     def __init__(self, gpu=0):
 
         super(MyModel, self).__init__()
+        c = {}
+        c['num_classes'] = 2
+        c['lstm_hidden_state_dim'] = 50
+        c['gpu'] = gpu
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = MultiModalNetConcat(gpu)
+        self.mm = FCM(c)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
 
-        xmm = self.cnn(image)  * 0 # CNN
-        x2 = img_text  # * 0  # Img Text Input
-        x3 = tweet  # * 0   # Tweet Text Input
-        x = self.mm(xmm, x2, x3)#, xi)  # Multimodal net
+        i = self.cnn(image)  # * 0 # CNN
+        it = img_text  # * 0  # Img Text Input
+        tt = tweet  # * 0   # Tweet Text Input
+        x = self.mm(i, it, tt) # Multimodal net
         return x
 
     def initialize_weights(self):
@@ -40,76 +44,69 @@ class MyModel(nn.Module):
                 m.bias.data.zero_()
 
 
-class MultiModalNetConcat(nn.Module):
+class FCM(nn.Module):
 
-    def __init__(self,gpu):
-        super(MultiModalNetConcat, self).__init__()
+    def __init__(self, c):
+        super(FCM, self).__init__()
 
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
-
-        # ARCH-1 4fc
-        # self.fc1 = BasicFC(2048 +  self.lstm_hidden_state_dim * 2, 2048 + self.lstm_hidden_state_dim * 2)
-        # self.fc2 = BasicFC(2048, 1024)
-        # self.fc3 = BasicFC(1024, 512)
-        # self.fc4 = nn.Linear(512, num_classes)
-
-        # ARCH-1 4fc same dimensions
         # Unimodal
         self.cnn_fc1 = BasicFC(2048, 1024)
-        self.img_text_fc1 = BasicFC(self.lstm_hidden_state_dim, 1024)
-        self.tweet_text_fc1 = BasicFC(self.lstm_hidden_state_dim, 1024)
+        self.img_text_fc1 = BasicFC(c['lstm_hidden_state_dim'], 1024)
+        self.tweet_text_fc1 = BasicFC(c['lstm_hidden_state_dim'], 1024)
 
         # Multimodal
         self.fc1 = BasicFC(1024*3, 2048)
         self.fc2 = BasicFC(2048, 1024)
         self.fc3 = BasicFC(1024, 512)
-        self.fc4 = nn.Linear(512, self.num_classes)
+        self.fc4 = nn.Linear(512, c['num_classes'])
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Separate process
-        x1 = self.cnn_fc1(x1)
-        x2 = self.img_text_fc1(x2)
-        x3 = self.tweet_text_fc1(x3)
+        i = self.cnn_fc1(i)
+        i = F.dropout(i, training=self.training)
+        it = self.img_text_fc1(it)
+        i = F.dropout(it, training=self.training)
+        tt = self.tweet_text_fc1(tt)
+        tt = F.dropout(tt, training=self.training)
+
 
         # Concatenate
-        x = torch.cat((x2, x3), dim=1)
-        x = torch.cat((x1, x), dim=1)
+        x = torch.cat((it, tt), dim=1)
+        x = torch.cat((i, x), dim=1)
 
         # ARCH-1 4fc
         x = self.fc1(x)
         x = self.fc2(x)
+        x = F.dropout(x, training=self.training)
         x = self.fc3(x)
         x = self.fc4(x)
 
         return x
 
 
-class MultiModalNetSpacialConcat(nn.Module):
+class SCM(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self,gpu):
-        super(MultiModalNetSpacialConcat, self).__init__()
-
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
+    def __init__(self,c):
+        super(SCM, self).__init__()
 
         # Create the linear layers that will process both the img and the txt
         self.MM_InceptionE_1 = InceptionE(2148)
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)
-        self.fc3_mm = nn.Linear(512, self.num_classes)
+        self.fc3_mm = nn.Linear(512, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
+
         # Repeat text embeddings in the 8x8 grid
-        x2 = x2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
-        x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+        it = it.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+        tt = tt.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
 
         # Concatenate text embeddings in each 8x8 cell
-        x = torch.cat((x2, x3), dim=1) # 100 x 8 x 8
-        x = torch.cat((x1, x), dim=1) # 2148 x 8 x 8
+        x = torch.cat((it, tt), dim=1) # 100 x 8 x 8
+        x = torch.cat((i, x), dim=1) # 2148 x 8 x 8
 
         # 1x1 Convolutions using Inceptions E blocks
         x = self.MM_InceptionE_1(x) # 2148 x 8 x 8
@@ -124,44 +121,41 @@ class MultiModalNetSpacialConcat(nn.Module):
         # Reshape and FC layers
         x = x.view(x.size(0), -1) # 2048
         x = self.fc1_mm(x)  # 1024
-        x = self.fc2_mm(x) # 512
-        x = self.fc3_mm(x)# 2
+        x = self.fc2_mm(x)  # 512
+        x = self.fc3_mm(x) # 2
 
         return x
 
 
-class MultiModalNetSpacialConcatSameDim(nn.Module):
+class SCM_SameDim(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self,gpu):
-        super(MultiModalNetSpacialConcatSameDim, self).__init__()
-
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+    def __init__(self,c):
+        super(SCM_SameDim, self).__init__()
 
         # Unimodal
-        self.img_text_fc1_sc = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.tweet_text_fc1_sc = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.img_text_fc1_sc = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.tweet_text_fc1_sc = BasicFC(c['lstm_hidden_state_dim'], 2048)
 
         self.MM_InceptionE_1 = InceptionE(2048*3)
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)
-        self.fc3_mm = nn.Linear(512, self.num_classes)
+        self.fc3_mm = nn.Linear(512, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Separate process
-        x2 = self.img_text_fc1_sc(x2)
-        x3 = self.tweet_text_fc1_sc(x3)
+        it = self.img_text_fc1_sc(it)
+        tt = self.tweet_text_fc1_sc(tt)
 
         # Repeat text embeddings in the 8x8 grid
-        x2 = x2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
-        x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
+        it = it.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
+        tt = tt.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 1024 x 8 x 8
 
         # Concatenate text embeddings in each 8x8 cell
-        x = torch.cat((x2, x3), dim=1) # 2048 x 8 x 8
-        x = torch.cat((x1, x), dim=1) # 3072 x 8 x 8
+        x = torch.cat((it, tt), dim=1) # 2048 x 8 x 8
+        x = torch.cat((i, x), dim=1) # 3072 x 8 x 8
 
         # 1x1 Convolutions using Inceptions E blocks
         x = self.MM_InceptionE_1(x) # 3072 x 8 x 8
@@ -177,68 +171,67 @@ class MultiModalNetSpacialConcatSameDim(nn.Module):
         x = x.view(x.size(0), -1) # 2048
         x = self.fc1_mm(x) # 1024
         x = self.fc2_mm(x) # 512
-        x = self.fc3_mm(x)# 2
+        x = self.fc3_mm(x) # 2
 
         return x
 
-class MultiModalNetTextualKernels(nn.Module):
+class TKM_ConcatAll(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels, self).__init__()
+    def __init__(self, c):
+        super(TKM_ConcatAll, self).__init__()
+        
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
-        self.gpu = gpu
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.fc_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k4 = BasicFC(['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k5 = BasicFC(['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
 
         self.bn_mm_info = nn.BatchNorm2d(self.num_tweetTxt_kernels + self.num_imgTxt_kernels, eps=0.001)
 
-        self.MM_InceptionE_1 = InceptionE(2048 + self.num_tweetTxt_kernels + self.num_imgTxt_kernels + 100)
+        self.MM_InceptionE_1 = InceptionE(2048 + self.num_tweetTxt_kernels + self.num_imgTxt_kernels + 2 * c['lstm_hidden_state_dim'])
         self.MM_InceptionE_2 = InceptionE(2048)
 
         self.fc1 = BasicFC(2048, 1024)
         self.fc2 = BasicFC(1024, 512)
-        self.fc3 = nn.Linear(512, self.num_classes)
+        self.fc3 = nn.Linear(512, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = self.fc_tweetTxt_k1(x3)
-        tweetTxt_k2 = self.fc_tweetTxt_k2(x3)
-        tweetTxt_k3 = self.fc_tweetTxt_k3(x3)
-        tweetTxt_k4 = self.fc_tweetTxt_k4(x3)
-        tweetTxt_k5 = self.fc_tweetTxt_k5(x3)
-        tweetTxt_k6 = self.fc_tweetTxt_k6(x3)
-        tweetTxt_k7 = self.fc_tweetTxt_k7(x3)
-        tweetTxt_k8 = self.fc_tweetTxt_k8(x3)
-        tweetTxt_k9 = self.fc_tweetTxt_k9(x3)
-        tweetTxt_k10 = self.fc_tweetTxt_k10(x3)
+        tweetTxt_k1 = self.fc_tweetTxt_k1(tt)
+        tweetTxt_k2 = self.fc_tweetTxt_k2(tt)
+        tweetTxt_k3 = self.fc_tweetTxt_k3(tt)
+        tweetTxt_k4 = self.fc_tweetTxt_k4(tt)
+        tweetTxt_k5 = self.fc_tweetTxt_k5(tt)
+        tweetTxt_k6 = self.fc_tweetTxt_k6(tt)
+        tweetTxt_k7 = self.fc_tweetTxt_k7(tt)
+        tweetTxt_k8 = self.fc_tweetTxt_k8(tt)
+        tweetTxt_k9 = self.fc_tweetTxt_k9(tt)
+        tweetTxt_k10 = self.fc_tweetTxt_k10(tt)
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = self.fc_imgTxt_k1(x2)
-        imgTxt_k2 = self.fc_imgTxt_k2(x2)
-        imgTxt_k3 = self.fc_imgTxt_k3(x2)
-        imgTxt_k4 = self.fc_imgTxt_k4(x2)
-        imgTxt_k5 = self.fc_imgTxt_k5(x2)
+        imgTxt_k1 = self.fc_imgTxt_k1(it)
+        imgTxt_k2 = self.fc_imgTxt_k2(it)
+        imgTxt_k3 = self.fc_imgTxt_k3(it)
+        imgTxt_k4 = self.fc_imgTxt_k4(it)
+        imgTxt_k5 = self.fc_imgTxt_k5(it)
 
         # Concatenate textual kernels (along 0 dimension)
         tweetTxt_k1 = tweetTxt_k1.unsqueeze(0) # 1 x 2048
@@ -274,7 +267,7 @@ class MultiModalNetTextualKernels(nn.Module):
         textual_kernels = textual_kernels.unsqueeze(3)
         textual_kernels = textual_kernels.unsqueeze(4)
 
-        batch_size = int(x2.shape[0]) # Batch size can be different in some iters
+        batch_size = int(it.shape[0]) # Batch size can be different in some iters
 
         # Apply 1x1x2048 kernels to visual feature map
         #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
@@ -283,7 +276,7 @@ class MultiModalNetTextualKernels(nn.Module):
         mm_info = torch.cuda.FloatTensor(batch_size,self.num_tweetTxt_kernels+self.num_imgTxt_kernels,8,8).cuda(self.gpu)
         #m_info[batch_size,k,8,8]
         for batch_i in range(0,batch_size):
-            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            mm_info[batch_i,:,:,:] = F.conv2d(i[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
             #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Batch normalization and ReLU
@@ -291,14 +284,14 @@ class MultiModalNetTextualKernels(nn.Module):
 
 
         # Concatenate visual feature map with resulting mm info
-        x = torch.cat((x1, mm_info), dim=1)  # 2048+K x 8 x 8
+        x = torch.cat((i, mm_info), dim=1)  # 2048+K x 8 x 8
 
         # Repeat text embeddings in the 8x8 grid
-        x2 = x2.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
-        x3 = x3.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+        it = it.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
+        tt = tt.unsqueeze(2).unsqueeze(2).repeat(1, 1, 8, 8) # 50 x 8 x 8
 
         # Concatenate text embeddings in each 8x8 cell
-        x23 = torch.cat((x2, x3), dim=1) # 100 x 8 x 8
+        x23 = torch.cat((it, tt), dim=1) # 100 x 8 x 8
         x = torch.cat((x, x23), dim=1) # 2048+K+100 x 8 x 8
 
         # 1x1 Convolutions using Inceptions E blocks
@@ -319,57 +312,55 @@ class MultiModalNetTextualKernels(nn.Module):
 
         return x
 
-class MultiModalNetTextualKernels_NoVisual(nn.Module):
+class TKM_NoVisualConcat(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels_NoVisual, self).__init__()
+    def __init__(self, c):
+        super(TKM_NoVisualConcat, self).__init__()
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
-        self.num_tweetTxt_kernels = 20 #10
-        self.num_imgTxt_kernels = 10 #5
-        self.gpu = gpu
+        self.num_tweetTxt_kernels = 20 # 10
+        self.num_imgTxt_kernels = 10 # 5
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k11 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k12 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k13 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k14 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k15 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k16 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k17 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k18 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k19 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k20 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.fc_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k11 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k12 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k13 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k14 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k15 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k16 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k17 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k18 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k19 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k20 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 2048)
 
         self.bn_mm_info = nn.BatchNorm2d(self.num_tweetTxt_kernels + self.num_imgTxt_kernels, eps=0.001)
 
-        self.MM_InceptionE_1 = InceptionE(self.num_tweetTxt_kernels + self.num_imgTxt_kernels + self.lstm_hidden_state_dim*2)
+        self.MM_InceptionE_1 = InceptionE(self.num_tweetTxt_kernels + self.num_imgTxt_kernels + c['lstm_hidden_state_dim']*2)
         self.MM_InceptionE_2 = InceptionE(2048)
 
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)
-        self.fc3_mm = nn.Linear(512, self.num_classes)
+        self.fc3_mm = nn.Linear(512, c['num_classes'])
 
 
     def forward(self, x1, x2, x3):
@@ -513,33 +504,31 @@ class MultiModalNetTextualKernels_NoVisual(nn.Module):
         x = self.fc3_mm(x) # 2
 
         return x
-class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
+class TKM_NoVisualNoTextualConcat(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels_NoVisual_NoTextual, self).__init__()
+    def __init__(self, c):
+        super(TKM_NoVisualNoTextualConcat, self).__init__()
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
-        self.gpu = gpu
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.fc_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
 
         self.bn_mm_info = nn.BatchNorm2d(self.num_tweetTxt_kernels + self.num_imgTxt_kernels, eps=0.001)
 
@@ -548,29 +537,29 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
 
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)
-        self.fc3_mm = nn.Linear(512, self.num_classes)
+        self.fc3_mm = nn.Linear(512, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = self.fc_tweetTxt_k1(x3)
-        tweetTxt_k2 = self.fc_tweetTxt_k2(x3)
-        tweetTxt_k3 = self.fc_tweetTxt_k3(x3)
-        tweetTxt_k4 = self.fc_tweetTxt_k4(x3)
-        tweetTxt_k5 = self.fc_tweetTxt_k5(x3)
-        tweetTxt_k6 = self.fc_tweetTxt_k6(x3)
-        tweetTxt_k7 = self.fc_tweetTxt_k7(x3)
-        tweetTxt_k8 = self.fc_tweetTxt_k8(x3)
-        tweetTxt_k9 = self.fc_tweetTxt_k9(x3)
-        tweetTxt_k10 = self.fc_tweetTxt_k10(x3)
+        tweetTxt_k1 = self.fc_tweetTxt_k1(tt)
+        tweetTxt_k2 = self.fc_tweetTxt_k2(tt)
+        tweetTxt_k3 = self.fc_tweetTxt_k3(tt)
+        tweetTxt_k4 = self.fc_tweetTxt_k4(tt)
+        tweetTxt_k5 = self.fc_tweetTxt_k5(tt)
+        tweetTxt_k6 = self.fc_tweetTxt_k6(tt)
+        tweetTxt_k7 = self.fc_tweetTxt_k7(tt)
+        tweetTxt_k8 = self.fc_tweetTxt_k8(tt)
+        tweetTxt_k9 = self.fc_tweetTxt_k9(tt)
+        tweetTxt_k10 = self.fc_tweetTxt_k10(tt)
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = self.fc_imgTxt_k1(x2)
-        imgTxt_k2 = self.fc_imgTxt_k2(x2)
-        imgTxt_k3 = self.fc_imgTxt_k3(x2)
-        imgTxt_k4 = self.fc_imgTxt_k4(x2)
-        imgTxt_k5 = self.fc_imgTxt_k5(x2)
+        imgTxt_k1 = self.fc_imgTxt_k1(it)
+        imgTxt_k2 = self.fc_imgTxt_k2(it)
+        imgTxt_k3 = self.fc_imgTxt_k3(it)
+        imgTxt_k4 = self.fc_imgTxt_k4(it)
+        imgTxt_k5 = self.fc_imgTxt_k5(it)
 
         # Concatenate textual kernels (along 0 dimension)
         tweetTxt_k1 = tweetTxt_k1.unsqueeze(0) # 1 x 2048
@@ -606,7 +595,7 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
         textual_kernels = textual_kernels.unsqueeze(3)
         textual_kernels = textual_kernels.unsqueeze(4)
 
-        batch_size = int(x2.shape[0]) # Batch size can be different in some iters
+        batch_size = int(it.shape[0]) # Batch size can be different in some iters
 
         # Apply 1x1x2048 kernels to visual feature map
         #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
@@ -615,7 +604,7 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
         mm_info = torch.cuda.FloatTensor(batch_size,self.num_tweetTxt_kernels+self.num_imgTxt_kernels,8,8).cuda(self.gpu)
         #m_info[batch_size,k,8,8]
         for batch_i in range(0,batch_size):
-            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            mm_info[batch_i,:,:,:] = F.conv2d(i[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
             #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Batch normalization and ReLU
@@ -640,33 +629,33 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual(nn.Module):
         return x
 
 
-class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
+class CTKM_NoVisualNoTextualConcat(nn.Module):
+
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels, self).__init__()
+    def __init__(self, c):
+        super(CTKM_NoVisualNoTextualConcat, self).__init__()
+
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
-        self.gpu = gpu
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc1_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 2048)
-        self.fc1_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 2048)
+        self.fc1_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 2048)
+        self.fc1_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 2048)
 
         # Textual kernels fc2
         self.fc2_tweetTxt_k1 = BasicFC(2048, 2048)
@@ -693,29 +682,29 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
 
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)
-        self.fc3_mm = nn.Linear(512, self.num_classes)
+        self.fc3_mm = nn.Linear(512, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = self.fc1_tweetTxt_k1(x3)
-        tweetTxt_k2 = self.fc1_tweetTxt_k2(x3)
-        tweetTxt_k3 = self.fc1_tweetTxt_k3(x3)
-        tweetTxt_k4 = self.fc1_tweetTxt_k4(x3)
-        tweetTxt_k5 = self.fc1_tweetTxt_k5(x3)
-        tweetTxt_k6 = self.fc1_tweetTxt_k6(x3)
-        tweetTxt_k7 = self.fc1_tweetTxt_k7(x3)
-        tweetTxt_k8 = self.fc1_tweetTxt_k8(x3)
-        tweetTxt_k9 = self.fc1_tweetTxt_k9(x3)
-        tweetTxt_k10 = self.fc1_tweetTxt_k10(x3)
+        tweetTxt_k1 = self.fc1_tweetTxt_k1(tt)
+        tweetTxt_k2 = self.fc1_tweetTxt_k2(tt)
+        tweetTxt_k3 = self.fc1_tweetTxt_k3(tt)
+        tweetTxt_k4 = self.fc1_tweetTxt_k4(tt)
+        tweetTxt_k5 = self.fc1_tweetTxt_k5(tt)
+        tweetTxt_k6 = self.fc1_tweetTxt_k6(tt)
+        tweetTxt_k7 = self.fc1_tweetTxt_k7(tt)
+        tweetTxt_k8 = self.fc1_tweetTxt_k8(tt)
+        tweetTxt_k9 = self.fc1_tweetTxt_k9(tt)
+        tweetTxt_k10 = self.fc1_tweetTxt_k10(tt)
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = self.fc1_imgTxt_k1(x2)
-        imgTxt_k2 = self.fc1_imgTxt_k2(x2)
-        imgTxt_k3 = self.fc1_imgTxt_k3(x2)
-        imgTxt_k4 = self.fc1_imgTxt_k4(x2)
-        imgTxt_k5 = self.fc1_imgTxt_k5(x2)
+        imgTxt_k1 = self.fc1_imgTxt_k1(it)
+        imgTxt_k2 = self.fc1_imgTxt_k2(it)
+        imgTxt_k3 = self.fc1_imgTxt_k3(it)
+        imgTxt_k4 = self.fc1_imgTxt_k4(it)
+        imgTxt_k5 = self.fc1_imgTxt_k5(it)
 
         # Same for fc2 of each kernel
         # Kernels Tweet Text # 2048 x 1 x 1
@@ -770,7 +759,7 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
         textual_kernels = textual_kernels.unsqueeze(3)
         textual_kernels = textual_kernels.unsqueeze(4)
 
-        batch_size = int(x2.shape[0]) # Batch size can be different in some iters
+        batch_size = int(it.shape[0]) # Batch size can be different in some iters
 
         # Apply 1x1x2048 kernels to visual feature map
         #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
@@ -779,7 +768,7 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
         mm_info = torch.cuda.FloatTensor(batch_size,self.num_tweetTxt_kernels+self.num_imgTxt_kernels,8,8).cuda(self.gpu)
         #m_info[batch_size,k,8,8]
         for batch_i in range(0,batch_size):
-            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            mm_info[batch_i,:,:,:] = F.conv2d(i[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
             #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Batch normalization and ReLU
@@ -804,33 +793,31 @@ class MultiModalNetTextualKernels_NoVisual_NoTextual_ComplexKernels(nn.Module):
         return x
 
 
-class MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels(nn.Module):
+class CTKM_v2_NoVisualNoTextual(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels, self).__init__()
+    def __init__(self, c):
+        super(CTKM_v2_NoVisualNoTextual, self).__init__()
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 150
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
-        self.gpu = gpu
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc1_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 768)
+        self.fc1_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 768)
 
         # Textual kernels fc2
         self.fc2_tweetTxt_k1 = BasicFC(768, 768)
@@ -855,29 +842,29 @@ class MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels(nn.Module
         self.MM_InceptionD_1 = InceptionD(self.num_tweetTxt_kernels + self.num_imgTxt_kernels)
         self.MM_InceptionE_1 = InceptionE(527)
         self.MM_InceptionE_2 = InceptionE(2048)
-        self.fc_mm = nn.Linear(2048, self.num_classes)
+        self.fc_mm = nn.Linear(2048, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = self.fc1_tweetTxt_k1(x3)
-        tweetTxt_k2 = self.fc1_tweetTxt_k2(x3)
-        tweetTxt_k3 = self.fc1_tweetTxt_k3(x3)
-        tweetTxt_k4 = self.fc1_tweetTxt_k4(x3)
-        tweetTxt_k5 = self.fc1_tweetTxt_k5(x3)
-        tweetTxt_k6 = self.fc1_tweetTxt_k6(x3)
-        tweetTxt_k7 = self.fc1_tweetTxt_k7(x3)
-        tweetTxt_k8 = self.fc1_tweetTxt_k8(x3)
-        tweetTxt_k9 = self.fc1_tweetTxt_k9(x3)
-        tweetTxt_k10 = self.fc1_tweetTxt_k10(x3)
+        tweetTxt_k1 = self.fc1_tweetTxt_k1(tt)
+        tweetTxt_k2 = self.fc1_tweetTxt_k2(tt)
+        tweetTxt_k3 = self.fc1_tweetTxt_k3(tt)
+        tweetTxt_k4 = self.fc1_tweetTxt_k4(tt)
+        tweetTxt_k5 = self.fc1_tweetTxt_k5(tt)
+        tweetTxt_k6 = self.fc1_tweetTxt_k6(tt)
+        tweetTxt_k7 = self.fc1_tweetTxt_k7(tt)
+        tweetTxt_k8 = self.fc1_tweetTxt_k8(tt)
+        tweetTxt_k9 = self.fc1_tweetTxt_k9(tt)
+        tweetTxt_k10 = self.fc1_tweetTxt_k10(tt)
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = self.fc1_imgTxt_k1(x2)
-        imgTxt_k2 = self.fc1_imgTxt_k2(x2)
-        imgTxt_k3 = self.fc1_imgTxt_k3(x2)
-        imgTxt_k4 = self.fc1_imgTxt_k4(x2)
-        imgTxt_k5 = self.fc1_imgTxt_k5(x2)
+        imgTxt_k1 = self.fc1_imgTxt_k1(it)
+        imgTxt_k2 = self.fc1_imgTxt_k2(it)
+        imgTxt_k3 = self.fc1_imgTxt_k3(it)
+        imgTxt_k4 = self.fc1_imgTxt_k4(it)
+        imgTxt_k5 = self.fc1_imgTxt_k5(it)
 
         # Same for fc2 of each kernel
         # Kernels Tweet Text # 2048 x 1 x 1
@@ -932,7 +919,7 @@ class MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels(nn.Module
         textual_kernels = textual_kernels.unsqueeze(3)
         textual_kernels = textual_kernels.unsqueeze(4)
 
-        batch_size = int(x2.shape[0]) # Batch size can be different in some iters
+        batch_size = int(it.shape[0]) # Batch size can be different in some iters
 
         # Apply 1x1x2048 kernels to visual feature map
         #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
@@ -941,7 +928,7 @@ class MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels(nn.Module
         mm_info = torch.cuda.FloatTensor(batch_size,self.num_tweetTxt_kernels+self.num_imgTxt_kernels,17,17).cuda(self.gpu)
         #m_info[batch_size,k,8,8]
         for batch_i in range(0,batch_size):
-            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            mm_info[batch_i,:,:,:] = F.conv2d(i[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
             #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Batch normalization and ReLU
@@ -964,33 +951,32 @@ class MultiModalNetTextualKernels_v2_NoVisual_NoTextual_ComplexKernels(nn.Module
 
         return x
 
-class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
+class CTKM_v2_ConcatAll(nn.Module):
     # CNN input size: 8 x 8 x 2048
-    def __init__(self, gpu):
-        super(MultiModalNetTextualKernels_v3_ComplexKernels, self).__init__()
+    def __init__(self, c):
+        super(CTKM_v2_ConcatAll, self).__init__()
         # Create the linear layers that will process both the img and the txt
-        self.num_classes = 2
-        self.lstm_hidden_state_dim = 50
+
         self.num_tweetTxt_kernels = 10
         self.num_imgTxt_kernels = 5
-        self.gpu = gpu
+        self.gpu = c['gpu']
 
         # Textual kernels
-        self.fc1_tweetTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k6 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k7 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k8 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k9 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_tweetTxt_k10 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k1 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k2 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k3 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k4 = BasicFC(self.lstm_hidden_state_dim, 768)
-        self.fc1_imgTxt_k5 = BasicFC(self.lstm_hidden_state_dim, 768)
+        self.fc1_tweetTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k6 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k7 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k8 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k9 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_tweetTxt_k10 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k1 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k2 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k3 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k4 = BasicFC(c['lstm_hidden_state_dim'], 768)
+        self.fc1_imgTxt_k5 = BasicFC(c['lstm_hidden_state_dim'], 768)
 
         # Textual kernels fc2
         self.fc2_tweetTxt_k1 = BasicFC(768, 768)
@@ -1016,31 +1002,31 @@ class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
         self.MM_InceptionE_1 = InceptionE(527)
         self.MM_InceptionE_2 = InceptionE(2048)
 
-        self.fc1_mm = BasicFC(2048+50+50, 2048)
+        self.fc1_mm = BasicFC(2048+ c['lstm_hidden_state_dim'] * 2, 2048)
         self.fc2_mm = BasicFC(2048, 2048)
-        self.fc3_mm = nn.Linear(2048, self.num_classes)
+        self.fc3_mm = nn.Linear(2048, c['num_classes'])
 
 
-    def forward(self, x1, x2, x3):
+    def forward(self, i, it, tt):
 
         # Learn K ((2)10) kernels from Text embeddings
         # Kernels Tweet Text # 2048 x 1 x 1
-        tweetTxt_k1 = self.fc1_tweetTxt_k1(x3)
-        tweetTxt_k2 = self.fc1_tweetTxt_k2(x3)
-        tweetTxt_k3 = self.fc1_tweetTxt_k3(x3)
-        tweetTxt_k4 = self.fc1_tweetTxt_k4(x3)
-        tweetTxt_k5 = self.fc1_tweetTxt_k5(x3)
-        tweetTxt_k6 = self.fc1_tweetTxt_k6(x3)
-        tweetTxt_k7 = self.fc1_tweetTxt_k7(x3)
-        tweetTxt_k8 = self.fc1_tweetTxt_k8(x3)
-        tweetTxt_k9 = self.fc1_tweetTxt_k9(x3)
-        tweetTxt_k10 = self.fc1_tweetTxt_k10(x3)
+        tweetTxt_k1 = self.fc1_tweetTxt_k1(tt)
+        tweetTxt_k2 = self.fc1_tweetTxt_k2(tt)
+        tweetTxt_k3 = self.fc1_tweetTxt_k3(tt)
+        tweetTxt_k4 = self.fc1_tweetTxt_k4(tt)
+        tweetTxt_k5 = self.fc1_tweetTxt_k5(tt)
+        tweetTxt_k6 = self.fc1_tweetTxt_k6(tt)
+        tweetTxt_k7 = self.fc1_tweetTxt_k7(tt)
+        tweetTxt_k8 = self.fc1_tweetTxt_k8(tt)
+        tweetTxt_k9 = self.fc1_tweetTxt_k9(tt)
+        tweetTxt_k10 = self.fc1_tweetTxt_k10(tt)
         # Kernels Image Text # 2048 x 1 x 1
-        imgTxt_k1 = self.fc1_imgTxt_k1(x2)
-        imgTxt_k2 = self.fc1_imgTxt_k2(x2)
-        imgTxt_k3 = self.fc1_imgTxt_k3(x2)
-        imgTxt_k4 = self.fc1_imgTxt_k4(x2)
-        imgTxt_k5 = self.fc1_imgTxt_k5(x2)
+        imgTxt_k1 = self.fc1_imgTxt_k1(it)
+        imgTxt_k2 = self.fc1_imgTxt_k2(it)
+        imgTxt_k3 = self.fc1_imgTxt_k3(it)
+        imgTxt_k4 = self.fc1_imgTxt_k4(it)
+        imgTxt_k5 = self.fc1_imgTxt_k5(it)
 
         # Same for fc2 of each kernel
         # Kernels Tweet Text # 2048 x 1 x 1
@@ -1095,7 +1081,7 @@ class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
         textual_kernels = textual_kernels.unsqueeze(3)
         textual_kernels = textual_kernels.unsqueeze(4)
 
-        batch_size = int(x2.shape[0]) # Batch size can be different in some iters
+        batch_size = int(it.shape[0]) # Batch size can be different in some iters
 
         # Apply 1x1x2048 kernels to visual feature map
         #     input: input tensor of shape (:math:`minibatch \times in\_channels \times iH \times iW`)
@@ -1104,7 +1090,7 @@ class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
         mm_info = torch.cuda.FloatTensor(batch_size,self.num_tweetTxt_kernels+self.num_imgTxt_kernels,17,17).cuda(self.gpu)
         #m_info[batch_size,k,8,8]
         for batch_i in range(0,batch_size):
-            mm_info[batch_i,:,:,:] = F.conv2d(x1[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
+            mm_info[batch_i,:,:,:] = F.conv2d(i[batch_i,:,:,:].unsqueeze(0), textual_kernels[:,batch_i,:], bias=None)
             #F.conv2d(input, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
         # Batch normalization and ReLU
@@ -1126,8 +1112,8 @@ class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
 
         # Concatenate MM vector with Visual Vector with Text embeddings
         # x = torch.cat((x, xi), dim=1) # 2048 + 2048
-        x = torch.cat((x, x2), dim=1) # 2048 + 50
-        x = torch.cat((x, x3), dim=1) # 2048 + 50 + 50
+        x = torch.cat((x, it), dim=1) # 2048 + 50
+        x = torch.cat((x, tt), dim=1) # 2048 + 50 + 50
 
         x = self.fc1_mm(x)
         x = self.fc2_mm(x)
@@ -1139,16 +1125,14 @@ class MultiModalNetTextualKernels_v3_ComplexKernels(nn.Module):
 
 class ImageEmbeddings(nn.Module):
 
-    def __init__(self,gpu):
+    def __init__(self,c):
         super(ImageEmbeddings, self).__init__()
 
-        self.num_classes = 2
-
         self.fc1 = BasicFC(2048, 200)
-        self.fc2 = nn.Linear(200, self.num_classes)
+        self.fc2 = nn.Linear(200, c['num_classes'])
 
-    def forward(self, x1, x2, x3):
-        x = self.fc1(x1)
+    def forward(self, i, tt, it):
+        x = self.fc1(i)
         # x = self.fc2(x)
         return x
 

@@ -30,7 +30,7 @@ best_prec1 = 0
 best_loss = 100
 
 
-weights = [0.7759, 1.0] #[0.7759, 1.0]
+weights = [0.4064, 1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'

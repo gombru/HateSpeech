@@ -4,11 +4,11 @@ import os
 import mymodel
 
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split = 'MMHS50K_lstm_embeddings_test_hate.txt'
+split = 'MMHS50K_noOther_lstm_embeddings_test_hate.txt'
 
 batch_size = 128
 workers = 6
-model_name = 'MMHS50K_FCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_76_ValAcc_61'
+model_name = 'MMHS50K_noOther_FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_40_ValAcc_55'
 
 gpus = [0]
 gpu = 0
