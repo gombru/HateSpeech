@@ -15,7 +15,7 @@ class MyModel(nn.Module):
         c['lstm_hidden_state_dim'] = 50
         c['gpu'] = gpu
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = FCM(c)
+        self.mm = SCM(c)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
@@ -62,14 +62,13 @@ class FCM(nn.Module):
 
     def forward(self, i, it, tt):
 
+        tt = F.dropout(tt, p=0.95, training=self.training)
+        it = F.dropout(it, p=0.95, training=self.training)
+
         # Separate process
         i = self.cnn_fc1(i)
-        i = F.dropout(i, training=self.training)
         it = self.img_text_fc1(it)
-        i = F.dropout(it, training=self.training)
         tt = self.tweet_text_fc1(tt)
-        tt = F.dropout(tt, training=self.training)
-
 
         # Concatenate
         x = torch.cat((it, tt), dim=1)
@@ -78,9 +77,42 @@ class FCM(nn.Module):
         # ARCH-1 4fc
         x = self.fc1(x)
         x = self.fc2(x)
-        x = F.dropout(x, training=self.training)
         x = self.fc3(x)
         x = self.fc4(x)
+
+        return x
+
+class FCM_tiny(nn.Module):
+
+    def __init__(self, c):
+        super(FCM, self).__init__()
+
+        # Unimodal
+        self.cnn_fc1 = BasicFC(2048, 512)
+        self.cnn_fc2 = BasicFC(512, c['lstm_hidden_state_dim'] * 2)
+
+        # Multimodal
+        self.fc1 = BasicFC(c['lstm_hidden_state_dim'] * 4, c['lstm_hidden_state_dim'] * 4)
+        self.fc2 = BasicFC(c['lstm_hidden_state_dim'] * 4, 128)
+        self.fc3 = nn.Linear(128, c['num_classes'])
+
+    def forward(self, i, it, tt):
+
+        tt = F.dropout(tt, p=0.7, training=self.training)
+        it = F.dropout(it, p=0.7, training=self.training)
+
+        # Separate process
+        i = self.cnn_fc1(i)
+        i = self.cnn_fc2(i)
+
+        # Concatenate
+        x = torch.cat((it, tt), dim=1)
+        x = torch.cat((i, x), dim=1)
+
+        # MM fc
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
 
         return x
 

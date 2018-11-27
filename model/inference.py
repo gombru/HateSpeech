@@ -8,7 +8,9 @@ split = 'MMHS50K_noOther_lstm_embeddings_test_hate.txt'
 
 batch_size = 128
 workers = 6
-model_name = 'MMHS50K_noOther_FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_40_ValAcc_55'
+
+model_name = 'MMHS50K_noOther_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_47_ValAcc_65'
+model_name = model_name.strip('.pth')
 
 gpus = [0]
 gpu = 0

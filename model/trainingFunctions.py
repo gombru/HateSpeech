@@ -61,6 +61,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
 
         if i % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
+                  'GPU: {gpu}\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -68,7 +69,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq, plot_dat
                   'Acc Hate {acc_hate.val:.3f} ({acc_hate.avg:.3f})\t'
                   'Acc NotHate {acc_notHate.val:.3f} ({acc_notHate.avg:.3f})\t'
                   'Acc Avg {acc_avg.val:.3f} ({acc_avg.avg:.3f})\t'.format(
-                   epoch, i, len(train_loader), batch_time=batch_time,
+                   epoch, i, len(train_loader), gpu=str(gpu), batch_time=batch_time,
                    data_time=data_time, loss=losses, acc=acc, acc_hate=acc_hate, acc_notHate=acc_notHate, acc_avg=acc_avg))
 
     print('TRAIN: Acc: ' + str(acc.avg.data[0].item()) + 'Acc Avg: ' + str(acc_avg.avg) + ' Hate Acc: ' + str(acc_hate.avg) + ' - Not Hate Acc: ' + str(

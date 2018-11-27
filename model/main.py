@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+training_id = 'MMHS50K_noOther_FCM_DOHardEmbeddings095_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split_train = 'MMHS50K_lstm_embeddings_train_hate.txt'
-split_val =  'MMHS50K_lstm_embeddings_val_hate.txt'
+split_train = 'MMHS50K_noOther_lstm_embeddings_train_hate.txt'
+split_val =  'MMHS50K_noOther_lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -20,7 +20,7 @@ workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 # Batch size
-print_freq = 1
+print_freq = 25
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start
 # resume = dataset + 'models/FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_130_ValAcc_62.pth.tar'
@@ -134,7 +134,7 @@ it_axes = arange(epochs)
 
 _, ax1 = subplots()
 ax2 = ax1.twinx()
-ax1.set_xlabel('epoch')
+ax1.set_xlabel('epoch ' + " (GPU " + str(gpu) +") ")
 ax1.set_ylabel('train loss (r), val loss (y), train acc hate (c), train acc not hate (o)')
 ax2.set_ylabel('train acc avg (b), val acc avg (g), val acc hate (k), val acc not hate (m)')
 ax2.set_autoscaley_on(False)
