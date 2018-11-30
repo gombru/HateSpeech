@@ -15,7 +15,7 @@ class MyModel(nn.Module):
         c['lstm_hidden_state_dim'] = 50
         c['gpu'] = gpu
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = SCM(c)
+        self.mm = FCM(c)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
@@ -42,6 +42,17 @@ class MyModel(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
+
+
+class testCNN(nn.Module):
+
+    def __init__(self, c):
+        super(testCNN, self).__init__()
+        self.fc1 = nn.Linear(2048, c['num_classes'])
+
+    def forward(self, i, it, tt):
+        x = self.fc1(i)
+        return x
 
 
 class FCM(nn.Module):
@@ -85,7 +96,7 @@ class FCM(nn.Module):
 class FCM_tiny(nn.Module):
 
     def __init__(self, c):
-        super(FCM, self).__init__()
+        super(FCM_tiny, self).__init__()
 
         # Unimodal
         self.cnn_fc1 = BasicFC(2048, 512)

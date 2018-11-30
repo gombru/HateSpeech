@@ -2,6 +2,9 @@ import torch
 import customDatasetTest
 import os
 import mymodel
+import sys
+sys.path.append('../evaluation')
+import evaluate_model
 
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
 split = 'MMHS50K_noOther_lstm_embeddings_test_hate.txt'
@@ -9,7 +12,7 @@ split = 'MMHS50K_noOther_lstm_embeddings_test_hate.txt'
 batch_size = 128
 workers = 6
 
-model_name = 'MMHS50K_noOther_SCM_ALL_ADAM_bs32_lrMMe6_lrCNNe7_epoch_47_ValAcc_65'
+model_name = 'MMHS50K_noOther_FCM_DOEmbeddings05_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInitV2_epoch_12_ValAcc_65.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -53,3 +56,7 @@ with torch.no_grad():
             output_file.write(str(tweet_id[idx]) + ',' + str(int(target[idx])) + topic_probs_str + '\n')
 
         print(str(i) + ' / ' + str(len(test_loader)))
+
+output_file.close()
+print("Running evaluation on Test set")
+evaluate_model.run_evaluation(model_name)

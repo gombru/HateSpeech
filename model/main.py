@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_noOther_FCM_DOHardEmbeddings095_ALL_ADAM_bs32_lrMMe6_lrCNNe7'
+training_id = 'MMHS50K_noOtherHard_FCM_I'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split_train = 'MMHS50K_noOther_lstm_embeddings_train_hate.txt'
-split_val =  'MMHS50K_noOther_lstm_embeddings_val_hate.txt'
+split_train = 'MMHS50K_noOtherHard_lstm_embeddings_train_hate.txt'
+split_val =  'MMHS50K_noOtherHard_lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -24,13 +24,14 @@ print_freq = 25
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start
 # resume = dataset + 'models/FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_130_ValAcc_62.pth.tar'
-# resume = dataset + 'models/MMHSv3mm_SAVED_FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_118_ValAcc_61.pth.tar'
+# resume = dataset + 'MMCNN_models/MMHS50K_noOther_NoFC_I_epoch_117_ValAcc_54.pth.tar'
 plot = True
-best_prec1 = 0
+best_score = 0
+best_epoch = 0
 best_loss = 100
 
 
-weights = [0.4064, 1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther
+weights = [0.5418, 1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther, [0.5418, 1.0] MM50K_noOtherHard
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'
@@ -84,18 +85,18 @@ model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
 # optionally resume from a checkpoint
 if resume:
     print("Loading pretrained model")
-    if os.path.isfile(resume):
-        print("=> loading checkpoint '{}'".format(resume))
-        checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
-        #start_epoch = checkpoint['epoch']
-        #best_prec1 = checkpoint['best_prec1']
-        model.load_state_dict(checkpoint, strict=False)
-        #optimizer.load_state_dict(checkpoint['optimizer'])
-        #print("=> loaded checkpoint '{}' (epoch {})"
-              # .format(resume, checkpoint['epoch']))
-        print("Checkpoint loaded")
-    else:
-        print("=> no checkpoint found at '{}'".format(resume))
+    # if os.path.isfile(resume):
+    print("=> loading checkpoint '{}'".format(resume))
+    checkpoint = torch.load(resume, map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
+    #start_epoch = checkpoint['epoch']
+    #best_score = checkpoint['best_score']
+    model.load_state_dict(checkpoint, strict=False)
+    #optimizer.load_state_dict(checkpoint['optimizer'])
+    #print("=> loaded checkpoint '{}' (epoch {})"
+          # .format(resume, checkpoint['epoch']))
+    print("Checkpoint loaded")
+    # else:
+    #     print("=> no checkpoint found at '{}'".format(resume))
 
 cudnn.benchmark = True
 
@@ -154,10 +155,12 @@ for epoch in range(start_epoch, epochs):
     plot_data = t.validate(val_loader, model, criterion, print_freq, plot_data, gpu)
 
     # remember best prec@1 and save checkpoint
-    is_best = plot_data['val_acc_avg'][epoch] > best_prec1
+    is_best = plot_data['val_acc_avg'][epoch] > best_score
     if is_best and epoch != 0:
         print("New best model. Val acc = " + str(plot_data['val_acc_avg'][epoch]))
-        best_prec1 = max(plot_data['val_acc_avg'][epoch], best_prec1)
+        best_score = max(plot_data['val_acc_avg'][epoch], best_score)
+        best_epoch = epoch
+        ax1.set_xlabel('epoch ' + ' / GPU: ' + str(gpu) + ' / Best epoch: ' + str(best_epoch) + ' with Val Acc: ' + str(best_score))
         t.save_checkpoint(dataset, model, is_best, filename = dataset +'/MMCNN_models/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])))
 
     # Save checkpoint by loss
