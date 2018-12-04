@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_noOtherHard_FCM_I'
+training_id = 'MMHS50K_faggotDyke_FCM_ALL'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split_train = 'MMHS50K_noOtherHard_lstm_embeddings_train_hate.txt'
-split_val =  'MMHS50K_noOtherHard_lstm_embeddings_val_hate.txt'
+split_train = 'MMHS50K_faggotDyke_lstm_embeddings_train_hate.txt'
+split_val =  'MMHS50K_faggotDyke_lstm_embeddings_val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -31,7 +31,7 @@ best_epoch = 0
 best_loss = 100
 
 
-weights = [0.5418, 1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther, [0.5418, 1.0] MM50K_noOtherHard
+weights = [0.8913,1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther, [0.5418, 1.0] MM50K_noOtherHard, [0.8913,1.0] faggotDyke
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'

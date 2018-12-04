@@ -12,7 +12,7 @@ class MyModel(nn.Module):
         super(MyModel, self).__init__()
         c = {}
         c['num_classes'] = 2
-        c['lstm_hidden_state_dim'] = 50
+        c['lstm_hidden_state_dim'] = 150
         c['gpu'] = gpu
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
         self.mm = FCM(c)
@@ -22,7 +22,7 @@ class MyModel(nn.Module):
 
         i = self.cnn(image)  # * 0 # CNN
         it = img_text  # * 0  # Img Text Input
-        tt = tweet  # * 0   # Tweet Text Input
+        tt = tweet # * 0   # Tweet Text Input
         x = self.mm(i, it, tt) # Multimodal net
         return x
 
