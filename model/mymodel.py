@@ -20,8 +20,8 @@ class MyModel(nn.Module):
 
     def forward(self, image, img_text, tweet):
 
-        i = self.cnn(image)  # * 0 # CNN
-        it = img_text  # * 0  # Img Text Input
+        i = self.cnn(image) # * 0 # CNN
+        it = img_text # * 0  # Img Text Input
         tt = tweet # * 0   # Tweet Text Input
         x = self.mm(i, it, tt) # Multimodal net
         return x
@@ -73,8 +73,8 @@ class FCM(nn.Module):
 
     def forward(self, i, it, tt):
 
-        tt = F.dropout(tt, p=0.95, training=self.training)
-        it = F.dropout(it, p=0.95, training=self.training)
+        # tt = F.dropout(tt, p=0.5, training=self.training)
+        # it = F.dropout(it, p=0.5, training=self.training)
 
         # Separate process
         i = self.cnn_fc1(i)
@@ -109,8 +109,8 @@ class FCM_tiny(nn.Module):
 
     def forward(self, i, it, tt):
 
-        tt = F.dropout(tt, p=0.7, training=self.training)
-        it = F.dropout(it, p=0.7, training=self.training)
+        # tt = F.dropout(tt, p=0.7, training=self.training)
+        # it = F.dropout(it, p=0.7, training=self.training)
 
         # Separate process
         i = self.cnn_fc1(i)

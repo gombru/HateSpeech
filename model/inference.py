@@ -7,12 +7,12 @@ sys.path.append('../evaluation')
 import evaluate_model
 
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split = 'MMHS50K_noOther_lstm_embeddings_test_hate.txt'
+split = 'MMHS50K_niggaNigger_lstm_embeddings_test_hate.txt'
 
 batch_size = 128
 workers = 6
 
-model_name = 'MMHS50K_noOther_FCM_DOEmbeddings05_ALL_ADAM_bs32_lrMMe6_lrCNNe7_CNNInitV2_epoch_12_ValAcc_65.pth'
+model_name = 'MMHS50K_niggaFaggot_FCM_TTI_epoch_12_ValAcc_55.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]

@@ -18,7 +18,7 @@ class customDatasetTest(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.Rescale = Rescale
-        self.hidden_state_dim = 50
+        self.hidden_state_dim = 150
 
         # Count number of elements
         print("Split: " + split)
@@ -34,7 +34,7 @@ class customDatasetTest(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_noOther_lstm_embeddings_img_txt.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_niggaNigger_lstm_embeddings_img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):

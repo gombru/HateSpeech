@@ -20,7 +20,7 @@ class CustomDataset(Dataset):
         self.Rescale = Rescale
         self.RandomCrop = RandomCrop
         self.Mirror = Mirror
-        self.hidden_state_dim = 50
+        self.hidden_state_dim = 150
 
         # Count number of elements
         num_elements = sum(1 for line in open(root_dir + 'tweet_embeddings/' + split))
@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_faggotDyke_lstm_embeddings_img_txt.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_niggaNigger_lstm_embeddings_img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
@@ -81,14 +81,14 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx], '.jpg')
+        img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx],'')#, '.jpg')
 
         try:
             image = Image.open(img_name)
             # print("FOUND " + img_name)
         except:
-            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
             print("Img file " + img_name + " not found, using hardcoded " + img_name)
+            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
             image = Image.open(img_name)
 
         try:
