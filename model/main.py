@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_niggaNigger_FCM_I'
+training_id = 'MMHS50K_niggaNigger_FCM_I_'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
 split_train = 'MMHS50K_niggaNigger_lstm_embeddings_train_hate.txt'
 split_val =  'MMHS50K_niggaNigger_lstm_embeddings_val_hate.txt'
