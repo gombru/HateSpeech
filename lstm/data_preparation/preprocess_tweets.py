@@ -63,4 +63,4 @@ if __name__ == '__main__':
     if text == "test":
         text = "I TEST alllll kinds of #hashtags and #HASHTAGS and #HashTags, @mentions and 3000 (http://t.co/dkfjkdf). w/ <3 :) haha!!!!!"
     tokens = tweet_preprocessing(text)
-    print tokens
+    # print tokens

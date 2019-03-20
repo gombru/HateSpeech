@@ -1,10 +1,10 @@
 import re
 import json
 
-out_file = open("../../../datasets/HateSPic/AMT/results/tweetsPerTerm_5k_1.txt","w")
+out_file = open("../../../datasets/HateSPic/AMT/MMHS2/tweetsPerTerm_5k.txt","w")
 
 # Read Search terms
-terms_file = open("../twitter/termsAndMine.txt","r")
+terms_file = open("../twitter/MM_terms.txt","r")
 tweets_per_term = {}
 for line in terms_file:
     line=re.sub('\r|\n|\t|#','',line).lower()
@@ -18,7 +18,7 @@ def find_searchWord(tweet_text):
     return"NoKeyWordFound"
 
 # Read and iter results
-results_file = open("../../../datasets/HateSPic/AMT/results/5k_1.csv","r")
+results_file = open("../../../datasets/HateSPic/AMT/50K/results/5k.csv","r")
 
 results = {}
 for i,line in enumerate(results_file):
@@ -60,7 +60,7 @@ for k,v in results.iteritems():
         errors+=1
         label = "Error"
 
-    tweet_data = json.load(open("../../../datasets/HateSPic/AMT/2label/" + str(k) + ".json"))
+    tweet_data = json.load(open("../../../datasets/HateSPic/MMHS/json/" + str(k) + ".json"))
     tweet_text = tweet_data["text"].strip("-").strip("#").lower()
     search_word = find_searchWord(tweet_text)
     if search_word == "NoKeyWordFound":

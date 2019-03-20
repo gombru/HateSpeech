@@ -20,9 +20,9 @@ class MyModel(nn.Module):
 
     def forward(self, image, img_text, tweet):
 
-        i = self.cnn(image) # * 0 # CNN
-        it = img_text # * 0  # Img Text Input
-        tt = tweet # * 0   # Tweet Text Input
+        i = self.cnn(image)  * 0 # CNN
+        it = img_text  * 0  # Img Text Input
+        tt = tweet  # * 0   # Tweet Text Input
         x = self.mm(i, it, tt) # Multimodal net
         return x
 

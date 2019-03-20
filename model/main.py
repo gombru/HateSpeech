@@ -9,7 +9,7 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_niggaNigger_FCM_I_'
+training_id = 'MMHS50K_niggaNigger_FCM_TT_'
 dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
 split_train = 'MMHS50K_niggaNigger_lstm_embeddings_train_hate.txt'
 split_val =  'MMHS50K_niggaNigger_lstm_embeddings_val_hate.txt'
@@ -19,7 +19,7 @@ gpu = 0
 workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
-batch_size = 5 #256 #32 Batch size
+batch_size = 32 #256 #32 Batch size
 print_freq = 1 #25
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start

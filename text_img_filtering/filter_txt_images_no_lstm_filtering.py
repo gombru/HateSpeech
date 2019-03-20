@@ -19,9 +19,9 @@ white_img_txt_th = 0.2
 txt_th = 0.3
 
 #Compute heatmaps from images in txt
-img_dir = '../../../datasets/HateSPic/twitter/img/'
-json_dir = '../../../datasets/HateSPic/twitter/json_6/'
-out_json_dir = '../../../datasets/HateSPic/AMT/2label/'
+img_dir = '../../../datasets/HateSPic/MMHS/img_extra/'
+json_dir = '../../../datasets/HateSPic/MMHS/json_extra/'
+out_json_dir = '../../../datasets/HateSPic/AMT/MMHS2/2label_extra/'
 out_dir = '../../../datasets/HateSPic/twitter/txt_img_fitlered/'
 discarded_dir = '../../../datasets/HateSPic/twitter/txt_img_discarded/'
 if not os.path.exists(out_dir):

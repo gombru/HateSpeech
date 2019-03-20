@@ -3,7 +3,7 @@ import random
 import os
 import json
 
-base_path = '../../../../datasets/HateSPic/twitter/json/'
+base_path = '../../../../datasets/HateSPic/twitter/json_all/'
 out_path = '../../../../datasets/HateSPic/lstm_data/twitter/'
 
 out_file = open(out_path + 'tweets.test', 'w')
@@ -16,6 +16,7 @@ for file in os.listdir(base_path):
         # Discard short tweets
         if len(text) < 5: continue
         if len(text.split(' ')) < 3: continue
+        text = text.strip('\r').strip('\n')
         out_file.write(str(info['id']) + ',' + text +'\n')
 
     except:

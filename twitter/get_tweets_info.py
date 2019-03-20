@@ -12,14 +12,14 @@ from PIL import Image
 
 # -- CONFIG --
 # tweets_data_path = '../../../datasets/HateSPic/twitter/hard/raw/hate_tweets_1.txt'
-tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/tweets_all_22.txt'
+tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/MMHS2/tweets_MM_terms_8.txt'
 min_text_length = 4
-images_dir = '../../../datasets/HateSPic/twitter/img/'
-tweets_info_dir = '../../../datasets/HateSPic/twitter/json_7/'
+images_dir = '../../../datasets/HateSPic/MMHS/img_extra/'
+tweets_info_dir = '../../../datasets/HateSPic/MMHS/json_extra/'
 
 discard = ['naked','beautiful','sexy','videos','sex','nude','girl','porn','pics','gallery','galery','clip','xxx','XXX','video','18','hottie']
 
-threads = 10
+threads = 6
 
 
 def download_save_image(url, image_path):
@@ -119,6 +119,7 @@ def process_tweet(line):
 # -- LOAD DATA -- each tweet is a dictionary
 tweets_file = open(tweets_data_path, "r")
 Parallel(n_jobs=threads)(delayed(process_tweet)(line,) for line in tweets_file)
+print("DONE")
 
 
 

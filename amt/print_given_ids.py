@@ -1,10 +1,15 @@
 import cv2
 import json
 import numpy as np
+import os
 
-ids_file = '../../../datasets/HateSPic/AMT/results/3rdTest_ids_txt_Hate_mm_notHate.txt'
+# ids_file = '../../../datasets/HateSPic/AMT/results/3rdTest_ids_txt_Hate_mm_notHate.txt'
 # ids_file = '../../../datasets/HateSPic/HateSPic/wrong_ids.txt'
 
+ids_file = '../../../datasets/HateSPic/MMHS50K/top_scored/FCM_TT_niggaNigger_top_hate.txt'
+out_folder = '../../../datasets/HateSPic/MMHS50K/top_scored/topTweets_FCM_TT_niggaNigger_top_hate/'
+if not os.path.exists(out_folder):
+    os.makedirs(out_folder)
 
 ids=[]
 for i,line in enumerate(open(ids_file,'r')):
@@ -15,14 +20,14 @@ for tweet_id in ids:
     # final_label = int(tweet_id[1])
     # tweet_id = int(tweet_id[0])
     # try:
-    im = cv2.imread('../../../datasets/HateSPic/HateSPic/img_resized/' + str(tweet_id) + '.jpg', 1)
+    im = cv2.imread('../../../datasets/HateSPic/MMHS50K/img_resized/' + str(tweet_id) + '.jpg', 1)
     height, width, channels = im.shape
     im = cv2.resize(im, (500, int(500*(height/float(width)))))
     height, width, channels = im.shape
     out_image = np.ones((height + 115, width, 3), np.uint8)
     out_image = out_image * 255
     out_image[40:height+40,0:width,:] = im
-    text = json.load(open('../../../datasets/HateSPic/twitter/json_all/' + str(tweet_id) + '.json'))['text'].strip('\n').strip('\t').encode("utf8")
+    text = json.load(open('../../../datasets/HateSPic/MMHS50K/json/' + str(tweet_id) + '.json'))['text'].strip('\n').strip('\t').encode("utf8")
     print text
     # print("json loaded")
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -35,12 +40,12 @@ for tweet_id in ids:
         cv2.putText(out_image, text, (10, height + 60), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
 
 
-    c = (20, 20, 255)
-    text = 'Only Text: Hate'
-    cv2.putText(out_image, text.replace('\n', ' '), (6+130 * 0, 25), font, 0.6, c, 2, cv2.LINE_AA)
-    c = (20, 255, 20)
-    text = 'MM Tweet: Not Hate'
-    cv2.putText(out_image, text.replace('\n', ' '), (6 + 130 * 2, 25), font, 0.6, c, 2, cv2.LINE_AA)
+    # c = (20, 20, 255)
+    # text = 'Only Text: Hate'
+    # cv2.putText(out_image, text.replace('\n', ' '), (6+130 * 0, 25), font, 0.6, c, 2, cv2.LINE_AA)
+    # c = (20, 255, 20)
+    # text = 'MM Tweet: Not Hate'
+    # cv2.putText(out_image, text.replace('\n', ' '), (6 + 130 * 2, 25), font, 0.6, c, 2, cv2.LINE_AA)
 
 
     # if final_label == 1:
@@ -51,7 +56,7 @@ for tweet_id in ids:
     #     cv2.putText(out_image, "Misclassified to Not Hate", (6 + 130 * 2, 25), font, 0.6, c, 2, cv2.LINE_AA)
 
 
-    cv2.imwrite('../../../datasets/HateSPic/AMT/3rdTest_img_results_txtHate_mmNotHate/' + str(tweet_id) + '.jpg', out_image)
+    cv2.imwrite(out_folder + str(tweet_id) + '.jpg', out_image)
     # cv2.imwrite('../../../datasets/HateSPic/HateSPic/wrong_ids/' + str(tweet_id) + '.jpg', out_image)
 
         # print("Saved")

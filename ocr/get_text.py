@@ -46,23 +46,19 @@ def request_ocr(api_key, image_filenames):
     return response
 
 ENDPOINT_URL = 'https://vision.googleapis.com/v1/images:annotate'
-RESULTS_DIR = '../../../datasets/HateSPic/HateSPic/img_text/'
+RESULTS_DIR = '../../../datasets/HateSPic/MMHS50K/img_txt/'
 results = {}
 # makedirs(RESULTS_DIR, exist_ok=True)
 
 api_key = 'AIzaSyB9TigeOiqzneipm-LQJUkHs_6xGd04oiM'
 image_filenames = []
 
-generated_base_path = '../../../datasets/HateSPic/HateSPicLabeler/generated_json/'
-datasets = ['HateSPic/','SemiSupervised/','WZ-LS/']
-base_path = '../../../datasets/HateSPic/'
+data_path = '../../../datasets/HateSPic/MMHS50K/anns/MMHS50K_GT.json'
+base_path = '../../../datasets/HateSPic/MMHS50K/'
+data = json.load(open(data_path,'r'))
 
-for i,dataset in enumerate(datasets):
-    for num_files, file in enumerate(os.listdir(generated_base_path + dataset)):
-        id = json.load(open(generated_base_path + dataset + file, 'r'))['id']
-        # If img_txt file already exists, skip
-        # if not os.isfile(RESULTS_DIR + str(id) + '.json'):
-        image_filenames.append(base_path + 'HateSPic/img/' + str(id) + '.jpg')
+for id,v in data.iteritems():
+    image_filenames.append(base_path + 'img/' + str(id) + '.jpg')
 
 
 # I do it image by image to don't fuck indices

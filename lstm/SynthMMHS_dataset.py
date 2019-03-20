@@ -4,7 +4,7 @@ import codecs
 from torchtext import data
 
 
-class MMHS50K(data.Dataset):
+class SynthMMHS(data.Dataset):
 
     @staticmethod
     def sort_key(ex):
@@ -27,26 +27,21 @@ class MMHS50K(data.Dataset):
             examples = []
 
             if split == 'train':
-                with codecs.open(os.path.join(path, 'tweets.train_hate'),'r','utf8') as f:
+                with codecs.open(os.path.join(path, 'anns_train.txt'),'r','utf8') as f:
                     examples += [
-                        data.Example.fromlist([line.split(',')[1], 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'tweets.train_nothate'),'r','utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line.split(',')[1], 'nothate'], fields) for line in f]
-
+                        data.Example.fromlist([line.split(',')[2], line.split(',')[1]], fields) for line in f]
             if split == 'val':
-                with codecs.open(os.path.join(path, 'tweets.val_hate'), 'r', 'utf8') as f:
+                with codecs.open(os.path.join(path, 'anns_val.txt'), 'r', 'utf8') as f:
                     examples += [
-                        data.Example.fromlist([line.split(',')[1], 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'tweets.val_nothate'), 'r', 'utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line.split(',')[1], 'nothate'], fields) for line in f]
+                        data.Example.fromlist([line.split(',')[2], line.split(',')[1]], fields) for line in f]
 
+            # for example in examples:
+            #     print example.label
 
-        super(MMHS50K, self).__init__(examples, fields, **kwargs)
+        super(SynthMMHS, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS50K/lstm_data/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/SynthMMHS/anns/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.
@@ -75,9 +70,9 @@ class MMHS50K(data.Dataset):
         print('train:',len(train_examples),'dev:',len(dev_examples))
         return cls(text_field, label_field, examples=train_examples), cls(text_field, label_field, examples=dev_examples)
 
-def load_MMHS50K(text_field, label_field, batch_size):
+def load_SynthMMHS(text_field, label_field, batch_size):
     print('loading data')
-    train_data, dev_data = MMHS50K.splits(text_field, label_field)
+    train_data, dev_data = SynthMMHS.splits(text_field, label_field)
     text_field.build_vocab(train_data, dev_data)
     label_field.build_vocab(train_data, dev_data)
     print('Size vocab: ' + str(len(text_field.vocab.itos)))

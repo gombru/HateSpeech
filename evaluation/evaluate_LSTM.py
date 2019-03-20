@@ -2,19 +2,19 @@ from evaluate import evaluate
 import random
 
 
-model_name = 'LSTM_niggaFaggot_tweet_text'
-scores_file = 'MMHS_niggaFaggot_lstm_scores' #'lstm_scores'
+model_name = 'LSTM_tweet_text'
+scores_file = 'MMHS50K_niggaFaggot_lstm_scores' #'lstm_scores'
 
 # Load data: LSTM scores for all tweets
 lstm_scores = {}
-with open('../../../datasets/HateSPic/twitter/'+scores_file+'.txt') as f:
+with open('../../../datasets/HateSPic/MMHS50K/lstm_scores/'+scores_file+'.txt') as f:
     for line in f:
         data = line.split(',')
         lstm_scores[int(data[0])] = float(data[1])
 
 # Load test indices
 results = []
-with open('../../../datasets/HateSPic/HateSPic/tweet_embeddings/MMHS-niggaFaggot-lstm_embeddings_test_hate.txt') as f:
+with open('../../../datasets/HateSPic/MMHS50K/tweet_embeddings/MMHS50K_niggaFaggot_lstm_embeddings_test_hate.txt') as f:
     for line in f:
         data = line.split(',')
         try:
@@ -23,7 +23,7 @@ with open('../../../datasets/HateSPic/HateSPic/tweet_embeddings/MMHS-niggaFaggot
             print("LSTM score for " + str(data[0]) + " not found, continuing")
             continue
 
-with open('../../../datasets/HateSPic/HateSPic/tweet_embeddings/MMHS-niggaFaggot-lstm_embeddings_test_nothate.txt') as f:
+with open('../../../datasets/HateSPic/MMHS50K/tweet_embeddings/MMHS50K_niggaFaggot_lstm_embeddings_test_nothate.txt') as f:
     for line in f:
         data = line.split(',')
         try:

@@ -12,7 +12,7 @@ split = 'MMHS50K_niggaNigger_lstm_embeddings_test_hate.txt'
 batch_size = 128
 workers = 6
 
-model_name = 'MMHS50K_niggaFaggot_FCM_TTI_epoch_12_ValAcc_55.pth'
+model_name = 'MMHS50K_niggaNigger_FCM_TT_epoch_71_ValAcc_56.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]

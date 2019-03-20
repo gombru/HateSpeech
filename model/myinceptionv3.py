@@ -120,7 +120,7 @@ class myInception3(nn.Module):
         x = F.dropout(x, training=self.training)
         # # 1 x 1 x 2048
         x = x.view(x.size(0), -1)
-        # 2048
+        # # 2048
         #x = self.fc(x) # RAUl
         # 1000 (num_classes)
 

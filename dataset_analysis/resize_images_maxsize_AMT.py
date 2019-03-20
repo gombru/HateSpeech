@@ -4,10 +4,10 @@ from joblib import Parallel, delayed
 import os
 
 
-images_path = '../../../datasets/HateSPic/SynthMMHS/img/'
-im_dest_path = '../../../datasets/HateSPic/SynthMMHS/img_resized/'
+images_path = '/home/rgomez/datasets/HateSPic/MMHS50K/img_resized/'
+im_dest_path = '/home/rgomez/datasets/HateSPic/MMHS50K/img_resized_amt/'
 
-minSize = 500
+maxSize = 400
 
 def resize(im_path):
     try:
@@ -17,12 +17,12 @@ def resize(im_path):
         h = im.size[1]
 
         if w < h:
-            new_width = minSize
-            new_height = int(minSize * (float(h) / w))
+            new_height = maxSize
+            new_width = int(maxSize * (float(w) / h))
 
         if h <= w:
-            new_height = minSize
-            new_width = int(minSize * (float(w) / h))
+            new_width = maxSize
+            new_height = int(maxSize * (float(h) / w))
 
         im = im.resize((new_width, new_height), Image.ANTIALIAS)
         im.save(im_dest_path + im_path.split('/')[-1])

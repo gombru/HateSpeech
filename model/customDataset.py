@@ -81,7 +81,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx],'')#, '.jpg')
+        img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx],'.jpg')#, '.jpg')
 
         try:
             image = Image.open(img_name)

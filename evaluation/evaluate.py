@@ -81,8 +81,8 @@ def evaluate(results, model_name):
             accuracy_hate) + " ACC NotHate: " + str(accuracy_notHate) + " ACC mean: " + str(accuracy))
 
     print("Best F1:  thr " + str(best_th) + " --> F1: " + str(best_f) + " PR: " + str(best_f_pr) + " RE: " + str(best_f_re))
-    print("Best mean ACC:  thr " + str(best_acc_th) + " --> ACC: " + str(best_accuracy) + " Hate ACC: " + str(
-        acc_hate_best_accuracy) + " Not Hate ACC: " + str(acc_notHate_best_accuracy))
+    print("Best mean ACC:  thr " + str(best_acc_th) + " --> ACC: " + str(best_accuracy*100) + " Hate ACC: " + str(
+        acc_hate_best_accuracy*100) + " Not Hate ACC: " + str(acc_notHate_best_accuracy*100))
 
     # Plot P-R
     # plt.plot(recalls, precisions)
@@ -110,14 +110,14 @@ def evaluate(results, model_name):
     save_data['recalls'] = recalls
     save_data['fpr'] = fpr
 
-    with open('../../../datasets/HateSPic/HateSPic/evaluation_results/' + model_name + '.json', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '.json', 'w') as outfile:
         json.dump(save_data, outfile)
 
-    with open('../../../datasets/HateSPic/HateSPic/evaluation_results/' + model_name + '_wrong_ids.txt', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '_wrong_ids.txt', 'w') as outfile:
         for id in wrong_ids:
             outfile.write(str(id[0]) + ',' + str(id[1]) + '\n')
 
-    with open('../../../datasets/HateSPic/HateSPic/evaluation_results/' + model_name + '_correct_ids.txt', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '_correct_ids.txt', 'w') as outfile:
         for id in correct_ids:
             outfile.write(str(id[0]) + ',' + str(id[1]) + '\n')
 
