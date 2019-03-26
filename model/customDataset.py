@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_niggaNigger_lstm_embeddings_img_txt.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS_lstm_embeddings_classification/img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
@@ -80,16 +80,15 @@ class CustomDataset(Dataset):
 
 
     def __getitem__(self, idx):
-
         img_name = '{}{}/{}{}'.format(self.root_dir, 'img_resized', self.tweet_ids[idx],'.jpg')#, '.jpg')
 
         try:
             image = Image.open(img_name)
             # print("FOUND " + img_name)
         except:
-            print("Img file " + img_name + " not found, using hardcoded " + img_name)
-            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
-            image = Image.open(img_name)
+            new_img_name = '../../../datasets/HateSPic/MMHS/img_resized/1037385299310112768.jpg'
+            print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
+            image = Image.open(new_img_name)
 
         try:
             width, height = image.size
@@ -110,7 +109,7 @@ class CustomDataset(Dataset):
 
         except:
             print("Error in data aumentation with image " + img_name)
-            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
+            img_name = '../../../datasets/HateSPic/MMHS/img_resized/1037385299310112768.jpg'
             print("Using hardcoded: " + img_name)
             image = Image.open(img_name)
             if self.RandomCrop != 0:

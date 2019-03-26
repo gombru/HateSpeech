@@ -9,10 +9,10 @@ import mymodel
 
 from pylab import zeros, arange, subplots, plt, savefig
 
-training_id = 'MMHS50K_niggaNigger_FCM_TT_'
-dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split_train = 'MMHS50K_niggaNigger_lstm_embeddings_train_hate.txt'
-split_val =  'MMHS50K_niggaNigger_lstm_embeddings_val_hate.txt'
+training_id = 'MMHS_classification_FCM_I'
+dataset = '../../../datasets/HateSPic/MMHS/' # Path to dataset
+split_train = 'MMHS_lstm_embeddings_classification/' + 'train_hate.txt'
+split_val = 'MMHS_lstm_embeddings_classification/' + 'val_hate.txt'
 ImgSize = 299
 gpus = [0]
 gpu = 0
@@ -20,7 +20,7 @@ workers = 4 # Num of data loading workers
 epochs = 301
 start_epoch = 0 # Useful on restarts
 batch_size = 32 #256 #32 Batch size
-print_freq = 1 #25
+print_freq = 25 #25
 resume = None #dataset + '/models/resnet101_BCE/resnet101_BCE_epoch_12.pth.tar' # Path to checkpoint top resume training
 # evaluate = False # Evaluate model on validation set at start
 # resume = dataset + 'models/FCM_I_ADAM_bs32_lrMMe6_lrCNNe7_epoch_130_ValAcc_62.pth.tar'
@@ -31,8 +31,7 @@ best_epoch = 0
 best_loss = 100
 
 
-weights = [1.0, 1.0] #[0.7759, 1.0] MM50K, [0.4064, 1.0] MM50K_noOther, [0.5418, 1.0] MM50K_noOtherHard, [0.8913,1.0] faggotDyke
-# [0.7676, 1.0] niggaFaggot
+weights = [0.7786, 1.0] #[0.7786, 1.0]
 class_weights = torch.FloatTensor(weights).cuda()
 
 optimizer_name = 'ADAM'
