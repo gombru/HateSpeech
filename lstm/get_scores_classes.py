@@ -99,6 +99,7 @@ def evaluate(model, split_iter):
         model.batch_size = cur_batch_size
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
         pred, hidden = model(sent.cuda())
+
         pred_label = pred.cpu().data.max(1)[1].numpy()
         # Get score per batch element
         for i in range(0, cur_batch_size):

@@ -18,13 +18,13 @@ torch.manual_seed(1)
 random.seed(1)
 torch.cuda.set_device(0)
 
-target = 'test_nothate'
+target = 'img_txt'
 split_name = 'tweets.' + target
 # split_name = 'anns_val_hate.txt'
 # target = 'val_hate'
-model_name = 'MMHS50K_niggaNigger_hidden_150_embedding_100_best_model_acc_val57' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
-out_file_name = 'tweet_embeddings/MMHS50K_niggaNigger_lstm_embeddings_' + target
-out_file = open("../../../datasets/HateSPic/MMHS50K/" + out_file_name + ".txt",'w')
+model_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
+out_file_name = 'tweet_embeddings/MMHS_lstm_embeddings_classification/' + target
+out_file = open("../../../datasets/HateSPic/MMHS/" + out_file_name + ".txt",'w')
 split_folder = ''
 
 class_labels =['hate','nothate']
@@ -64,7 +64,7 @@ def get_accuracy(truth, pred):
      return right/len(truth)
 
 def test():
-    model_path = '../../../datasets/HateSPic/MMHS50K/lstm_models/' + model_name + '.model'
+    model_path = '../../../datasets/HateSPic/MMHS/lstm_models/' + model_name + '.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 150
     BATCH_SIZE = 8 # 2048, 128
@@ -83,9 +83,9 @@ def test():
     model.word_embeddings.weight.data = text_field.vocab.vectors
     model.load_state_dict((torch.load(model_path)))
     model = model.cuda()
-    print len(split_iter)
+    print(len(split_iter))
 
-    print "Computing ..."
+    print("Computing ...")
     evaluate(model,split_iter)
 
 
@@ -100,7 +100,7 @@ def evaluate(model, split_iter):
     for batch in split_iter:
 
         # if count % 100 == 0: print count
-        print count
+        print(count)
 
         sent, label = batch.text, batch.label
         cur_batch_size = label.__len__()
@@ -120,7 +120,7 @@ def evaluate(model, split_iter):
             predicted_classes_count[pred_label[i]] += 1
         count+= cur_batch_size
 
-    print "Writing results"
+    print("Writing results")
     out_file.close()
 
     print("Predicted classes:")
@@ -128,4 +128,4 @@ def evaluate(model, split_iter):
         print(cl + ": " + str(predicted_classes_count[i]))
 
 test()
-print "DONE"
+print("DONE")

@@ -11,15 +11,7 @@ class MMHS50K(data.Dataset):
         return len(ex.text)
 
     def __init__(self, text_field, label_field, path=None, examples=None, split=None, **kwargs):
-        """Create an Emotion Dataset instance given a path and fields.
-        Arguments:
-            text_field: The field that will be used for text data.
-            label_field: The field that will be used for label data.
-            path: Path to the data file.
-            examples: The examples contain all the data.
-            Remaining keyword arguments: Passed to the constructor of
-                data.Dataset.
-        """
+
         # text_field.preprocessing = data.Pipeline(clean_str)
         fields = [('text', text_field), ('label', label_field)]
         if examples is None:
@@ -27,26 +19,19 @@ class MMHS50K(data.Dataset):
             examples = []
 
             if split == 'train':
-                with codecs.open(os.path.join(path, 'tweets.train_hate'),'r','utf8') as f:
+                with codecs.open(os.path.join(path, 'tweets.train'),'r','utf8') as f:
                     examples += [
-                        data.Example.fromlist([line.split(',')[1], 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'tweets.train_nothate'),'r','utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line.split(',')[1], 'nothate'], fields) for line in f]
+                        data.Example.fromlist([line.split(',')[1], float(line.split(',')[2])], fields) for line in f]
 
             if split == 'val':
-                with codecs.open(os.path.join(path, 'tweets.val_hate'), 'r', 'utf8') as f:
+                with codecs.open(os.path.join(path, 'tweets.val'), 'r', 'utf8') as f:
                     examples += [
-                        data.Example.fromlist([line.split(',')[1], 'hate'], fields) for line in f]
-                with codecs.open(os.path.join(path, 'tweets.val_nothate'), 'r', 'utf8') as f:
-                    examples += [
-                        data.Example.fromlist([line.split(',')[1], 'nothate'], fields) for line in f]
-
+                        data.Example.fromlist([line.split(',')[1], float(line.split(',')[2])], fields) for line in f]
 
         super(MMHS50K, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_classification/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/", **kwargs):
         """Create dataset objects for splits of the MR dataset.
         Arguments:
             text_field: The field that will be used for the sentence.

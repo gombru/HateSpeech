@@ -51,8 +51,8 @@ class MMHS50K(data.Dataset):
             Remaining keyword arguments: Passed to the splits method of
                 Dataset.
         """
-        path = "../../../datasets/HateSPic/MMHS50K/lstm_data_niggaNigger/" + split_folder + "/"
-        print "Split:  "  + path
+        path = "../../../datasets/HateSPic/MMHS/lstm_data/" + split_folder + "/"
+        print("Split:  "  + path)
         test_examples = cls(text_field, label_field, id_field, path=path, split_name=split_name, **kwargs).examples
 
         # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
@@ -77,7 +77,7 @@ class MMHS50K(data.Dataset):
         # MMHS10K
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
-        train_path = "../../../datasets/HateSPic/MMHS50K/lstm_data_niggaNigger/"
+        train_path = "../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_classification/"
         with codecs.open(os.path.join(train_path, 'tweets.train_hate'), 'r', 'utf8') as f:
             train_examples += [
                 data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
