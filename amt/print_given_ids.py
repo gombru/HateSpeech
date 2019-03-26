@@ -6,8 +6,8 @@ import os
 # ids_file = '../../../datasets/HateSPic/AMT/results/3rdTest_ids_txt_Hate_mm_notHate.txt'
 # ids_file = '../../../datasets/HateSPic/HateSPic/wrong_ids.txt'
 
-ids_file = '../../../datasets/HateSPic/MMHS50K/top_scored/FCM_TT_niggaNigger_top_hate.txt'
-out_folder = '../../../datasets/HateSPic/MMHS50K/top_scored/topTweets_FCM_TT_niggaNigger_top_hate/'
+ids_file = '../../../datasets/HateSPic/MMHS/anns/analysis/ids_agreement_homo.txt'
+out_folder = '../../../datasets/HateSPic/MMHS/anns/analysis/homo/'
 if not os.path.exists(out_folder):
     os.makedirs(out_folder)
 
@@ -20,15 +20,15 @@ for tweet_id in ids:
     # final_label = int(tweet_id[1])
     # tweet_id = int(tweet_id[0])
     # try:
-    im = cv2.imread('../../../datasets/HateSPic/MMHS50K/img_resized/' + str(tweet_id) + '.jpg', 1)
+    im = cv2.imread('../../../datasets/HateSPic/MMHS/img_resized/' + str(tweet_id) + '.jpg', 1)
     height, width, channels = im.shape
     im = cv2.resize(im, (500, int(500*(height/float(width)))))
     height, width, channels = im.shape
     out_image = np.ones((height + 115, width, 3), np.uint8)
     out_image = out_image * 255
     out_image[40:height+40,0:width,:] = im
-    text = json.load(open('../../../datasets/HateSPic/MMHS50K/json/' + str(tweet_id) + '.json'))['text'].strip('\n').strip('\t').encode("utf8")
-    print text
+    text = json.load(open('../../../datasets/HateSPic/MMHS/json/' + str(tweet_id) + '.json'))['text'].strip('\n').strip('\t').encode("utf8")
+    print(text)
     # print("json loaded")
     font = cv2.FONT_HERSHEY_SIMPLEX
     texts = []

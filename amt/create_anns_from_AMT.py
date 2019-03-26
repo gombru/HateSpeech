@@ -1,9 +1,9 @@
 import json
 
-out_file = open("../../../datasets/HateSPic/MMHS/anns/MMHS_5K_GT.json","w")
+out_file = open("../../../datasets/HateSPic/MMHS/anns/5k_worker2.json","w")
 
 # Read and iter results
-results_file = open("../../../datasets/HateSPic/AMT/MMHS2/results/5k.csv","r")
+results_file = open("../../../datasets/HateSPic/AMT/MMHS2/results/5k_worker2.csv","r")
 
 results = {}
 for i,line in enumerate(results_file):
@@ -54,7 +54,7 @@ for k,v in results.iteritems():
         errors+=1
         label = "Error"
 
-    tweet_data = json.load(open("../../../datasets/HateSPic/MMHS/json_50K/" + str(k) + ".json"))
+    tweet_data = json.load(open("../../../datasets/HateSPic/MMHS/json/" + str(k) + ".json"))
     tweet_text = tweet_data["text"]
     tweet_url = "https://twitter.com/user/status/" + str(k)
 
