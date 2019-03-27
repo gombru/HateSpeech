@@ -6,6 +6,8 @@ def evaluate(results, model_name):
 
 
     thresholds = np.arange(0, 1, 0.001)
+    # thresholds = np.arange(0.4, 0.44, 0.000001)
+
 
     best_f = 0
     best_th = 0
@@ -110,14 +112,14 @@ def evaluate(results, model_name):
     save_data['recalls'] = recalls
     save_data['fpr'] = fpr
 
-    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '.json', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS/evaluation_results/' + model_name + '.json', 'w') as outfile:
         json.dump(save_data, outfile)
 
-    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '_wrong_ids.txt', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS/evaluation_results/' + model_name + '_wrong_ids.txt', 'w') as outfile:
         for id in wrong_ids:
             outfile.write(str(id[0]) + ',' + str(id[1]) + '\n')
 
-    with open('../../../datasets/HateSPic/MMHS50K/evaluation_results/' + model_name + '_correct_ids.txt', 'w') as outfile:
+    with open('../../../datasets/HateSPic/MMHS/evaluation_results/' + model_name + '_correct_ids.txt', 'w') as outfile:
         for id in correct_ids:
             outfile.write(str(id[0]) + ',' + str(id[1]) + '\n')
 

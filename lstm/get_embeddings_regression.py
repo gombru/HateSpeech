@@ -7,23 +7,24 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import MMHS50K_dataset_test
+import MMHS_dataset_regression_test
+# import SynthMMHS_dataset_test
+# import MMHS50K_dataset_classes_test
 import os
 import random
 import numpy as np
-torch.set_num_threads(8)
+torch.set_num_threads(4)
 torch.manual_seed(1)
 random.seed(1)
 torch.cuda.set_device(0)
 
-target = 'test_all'
-out_file_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61'
+target = 'test'
 split_name = 'tweets.' + target
-out_file = open("../../../datasets/HateSPic/MMHS/lstm_scores/" + out_file_name + ".txt",'w')
+model_name = 'MMHS_regression_hidden_150_embedding_100_best_model'
+out_file_name = 'tweet_embeddings/MMHS_lstm_embeddings_regression/' + target
+out_file = open("../../../datasets/HateSPic/MMHS/" + out_file_name + ".txt",'w')
 split_folder = ''
-model_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
 
-class_labels =['hate','nothate']
 
 class LSTMClassifier(nn.Module):
 
@@ -33,7 +34,7 @@ class LSTMClassifier(nn.Module):
         self.batch_size = batch_size
         self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim)
-        self.hidden2label = nn.Linear(hidden_dim, label_size)
+        self.hidden2label = nn.Linear(hidden_dim, 1)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
@@ -46,9 +47,8 @@ class LSTMClassifier(nn.Module):
         embeds = self.word_embeddings(sentence)
         x = embeds.view(len(sentence), self.batch_size , -1)
         lstm_out, self.hidden = self.lstm(x, self.hidden)
-        y = self.hidden2label(lstm_out[-1])
-        log_probs = F.log_softmax(y)
-        return log_probs, self.hidden
+        y  = self.hidden2label(lstm_out[-1])
+        return y, self.hidden
 
 def get_accuracy(truth, pred):
      assert len(truth)==len(pred)
@@ -62,17 +62,19 @@ def test():
     model_path = '../../../datasets/HateSPic/MMHS/lstm_models/' + model_name + '.model'
     EMBEDDING_DIM = 100
     HIDDEN_DIM = 150
-    BATCH_SIZE = 64 # 2048
+    BATCH_SIZE = 8 # 2048, 128
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
     id_field = data.Field(sequential=False, use_vocab=False)
-    split_iter = MMHS50K_dataset_test.load_MMHS50K(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder=split_folder, split_name = split_name)
+    split_iter = MMHS_dataset_regression_test.load_MMHS50K(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder=split_folder, split_name = split_name)
+    print("Len labels vocab: " + str(len(label_field.vocab)))
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
     model = LSTMClassifier(embedding_dim=EMBEDDING_DIM, hidden_dim=HIDDEN_DIM,
-                           vocab_size=len(text_field.vocab),label_size=len(label_field.vocab)-1,
+                           vocab_size=len(text_field.vocab),label_size=1,
                             batch_size=BATCH_SIZE)
+
     model.word_embeddings.weight.data = text_field.vocab.vectors
     model.load_state_dict((torch.load(model_path)))
     model = model.cuda()
@@ -85,49 +87,32 @@ def test():
 
 
 def evaluate(model, split_iter):
-
-    predicted_classes_count = np.zeros(len(class_labels))
     model.eval()
     count = 0
-    results_string = ''
 
     for batch in split_iter:
 
         print(count)
 
         sent, label = batch.text, batch.label
-
         cur_batch_size = label.__len__()
         model.batch_size = cur_batch_size
+
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
         pred, hidden = model(sent.cuda())
-        pred_label = pred.cpu().data.max(1)[1].numpy()
 
-        # Get score per batch element
+        # Get embedding per batch element
         for i in range(0, cur_batch_size):
-            hate_score = float(pred[i][1])
-            nothate_score = float(pred[i][0])
-            softmax_score = np.exp(hate_score) / (np.exp(hate_score) + np.exp(nothate_score))
-            text = batch.dataset.examples[count+i].text
-            text_str = ''
-            for w in text:
-                try:
-                    text_str += w.decode('utf-8') + ' '
-                except:
-                    continue
-            id = batch.dataset.examples[count+i].id
-            results_string += id + ',' + str(softmax_score) + ',' + text_str + '\n'
-            predicted_classes_count[pred_label[i]] += 1
-
-        count += cur_batch_size
+            el_embedding = hidden[0][0,i,:]
+            id = batch.dataset.examples[count + i].id
+            embeddingString = ""
+            for d in el_embedding: embeddingString += ',' + str(d.item())
+            result_string = id + embeddingString + '\n'
+            out_file.write(result_string)
+        count+= cur_batch_size
 
     print("Writing results")
-    out_file.write(results_string)
     out_file.close()
-
-    print("Predicted classes:")
-    for i,cl in enumerate(class_labels):
-        print(cl + ": " + str(predicted_classes_count[i]))
 
 test()
 print("DONE")

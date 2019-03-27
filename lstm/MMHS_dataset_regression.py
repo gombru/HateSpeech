@@ -32,30 +32,12 @@ class MMHS50K(data.Dataset):
 
     @classmethod
     def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/", **kwargs):
-        """Create dataset objects for splits of the MR dataset.
-        Arguments:
-            text_field: The field that will be used for the sentence.
-            label_field: The field that will be used for label data.
-            dev_ratio: The ratio that will be used to get split validation dataset.
-            shuffle: Whether to shuffle the data before split.
-            root: The root directory that the dataset's zip archive will be
-                expanded into; therefore the directory in whose trees
-                subdirectory the data files will be stored.
-            train: The filename of the train data. Default: 'train.txt'.
-            Remaining keyword arguments: Passed to the splits method of
-                Dataset.
-        """
+
         train_examples = cls(text_field, label_field, path=path, split='train', **kwargs).examples
         if shuffle: random.shuffle(train_examples)
 
         dev_examples = cls(text_field, label_field, path=path, split='val', **kwargs).examples
         if shuffle: random.shuffle(dev_examples)
-
-        # dev_index = int(len(examples) - 0.05 * len(examples))
-        # train_examples = examples[0:dev_index]
-        # dev_examples = examples[dev_index:]
-        # random.shuffle(train_examples)
-        # random.shuffle(dev_examples)
 
         print('train:',len(train_examples),'dev:',len(dev_examples))
         return cls(text_field, label_field, examples=train_examples), cls(text_field, label_field, examples=dev_examples)

@@ -32,7 +32,7 @@ class MMHS50K(data.Dataset):
 
             examples += [
                 # Twitter
-                data.Example.fromlist([line.split(',',1)[1], 'hate', line.split(',')[0]], fields) for line in lines]
+                data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]), line.split(',')[0]], fields) for line in lines]
 
         super(MMHS50K, self).__init__(examples, fields, **kwargs)
 
@@ -78,19 +78,12 @@ class MMHS50K(data.Dataset):
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
         train_path = "../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/"
-        with codecs.open(os.path.join(train_path, 'tweets.train_hate'), 'r', 'utf8') as f:
+        with codecs.open(os.path.join(train_path, 'tweets.train'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'tweets.train_nothate'), 'r', 'utf8') as f:
+                data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]),'0'], fields) for line in f]
+        with codecs.open(os.path.join(train_path, 'tweets.val'), 'r', 'utf8') as f:
             train_examples += [
-                data.Example.fromlist([line.split(',')[1], 'nothate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'tweets.val_hate'), 'r', 'utf8') as f:
-            train_examples += [
-                data.Example.fromlist([line.split(',')[1], 'hate','0'], fields) for line in f]
-        with codecs.open(os.path.join(train_path, 'tweets.val_nothate'), 'r', 'utf8') as f:
-            train_examples += [
-                data.Example.fromlist([line.split(',')[1], 'nothate','0'], fields) for line in f]
-
+                data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]),'0'], fields) for line in f]
 
         #random.shuffle(test_examples)
         print('num train samples (for vocab initialization):',len(train_examples))

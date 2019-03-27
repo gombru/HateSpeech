@@ -6,7 +6,7 @@ def run_evaluation(model):
 
     model = model.strip('.pth')
     results = []
-    with open('../../../datasets/HateSPic/MMHS50K/results/' + model + '/test.txt') as f:
+    with open('../../../datasets/HateSPic/MMHS/results/' + model + '/test.txt') as f:
         for line in f:
             data = line.split(',')
             label = int(data[1])

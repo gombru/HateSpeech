@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchtext import data
 # import classification_datasets
-import MMHS50K_dataset_test
+import MMHS_dataset_regression_test
 import os
 import random
 import numpy as np
@@ -16,12 +16,12 @@ torch.manual_seed(1)
 random.seed(1)
 torch.cuda.set_device(0)
 
-target = 'test_all'
-out_file_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61'
+target = 'test'
+out_file_name = 'MMHS_regression_hidden_150_embedding_100_best_model'
 split_name = 'tweets.' + target
 out_file = open("../../../datasets/HateSPic/MMHS/lstm_scores/" + out_file_name + ".txt",'w')
 split_folder = ''
-model_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
+model_name = 'MMHS_regression_hidden_150_embedding_100_best_model' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
 
 class_labels =['hate','nothate']
 
@@ -33,7 +33,7 @@ class LSTMClassifier(nn.Module):
         self.batch_size = batch_size
         self.word_embeddings = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim)
-        self.hidden2label = nn.Linear(hidden_dim, label_size)
+        self.hidden2label = nn.Linear(hidden_dim, 1)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
@@ -47,8 +47,7 @@ class LSTMClassifier(nn.Module):
         x = embeds.view(len(sentence), self.batch_size , -1)
         lstm_out, self.hidden = self.lstm(x, self.hidden)
         y = self.hidden2label(lstm_out[-1])
-        log_probs = F.log_softmax(y)
-        return log_probs, self.hidden
+        return y
 
 def get_accuracy(truth, pred):
      assert len(truth)==len(pred)
@@ -66,7 +65,7 @@ def test():
     text_field = data.Field(lower=True)
     label_field = data.Field(sequential=False)
     id_field = data.Field(sequential=False, use_vocab=False)
-    split_iter = MMHS50K_dataset_test.load_MMHS50K(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder=split_folder, split_name = split_name)
+    split_iter = MMHS_dataset_regression_test.load_MMHS50K(text_field, label_field, id_field, batch_size=BATCH_SIZE, split_folder=split_folder, split_name = split_name)
 
     text_field.vocab.load_vectors('glove.twitter.27B.100d')
 
@@ -99,15 +98,17 @@ def evaluate(model, split_iter):
 
         cur_batch_size = label.__len__()
         model.batch_size = cur_batch_size
+
+        regression_labels = torch.zeros([model.batch_size,1], dtype=torch.float32)
+        for c in range(0,model.batch_size):
+            regression_labels[c] = batch.dataset.examples[count+c].label
+
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
-        pred, hidden = model(sent.cuda())
-        pred_label = pred.cpu().data.max(1)[1].numpy()
+        pred = model(sent.cuda())
+        pred = pred.cpu().data.numpy()
 
         # Get score per batch element
         for i in range(0, cur_batch_size):
-            hate_score = float(pred[i][1])
-            nothate_score = float(pred[i][0])
-            softmax_score = np.exp(hate_score) / (np.exp(hate_score) + np.exp(nothate_score))
             text = batch.dataset.examples[count+i].text
             text_str = ''
             for w in text:
@@ -116,8 +117,7 @@ def evaluate(model, split_iter):
                 except:
                     continue
             id = batch.dataset.examples[count+i].id
-            results_string += id + ',' + str(softmax_score) + ',' + text_str + '\n'
-            predicted_classes_count[pred_label[i]] += 1
+            results_string += id + ',' + str(pred[i][0]) + ',' + text_str + '\n'
 
         count += cur_batch_size
 
