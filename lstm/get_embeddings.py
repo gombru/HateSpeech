@@ -20,7 +20,7 @@ torch.cuda.set_device(0)
 
 target = 'img_txt'
 split_name = 'tweets.' + target
-# split_name = 'anns_val_hate.txt'
+# split_name = 'anns_val_hate.txt '
 # target = 'val_hate'
 model_name = 'MMHS_classification_hidden_150_embedding_100_best_model_acc_val61' # 'saved_hate_annotated_hidden_50_best_model_minibatch_acc_77'
 out_file_name = 'tweet_embeddings/MMHS_lstm_embeddings_classification/' + target
