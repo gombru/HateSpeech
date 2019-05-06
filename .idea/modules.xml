@@ -3,6 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/HateSPic.iml" filepath="$PROJECT_DIR$/.idea/HateSPic.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SocialMediaWeakLabeling/.idea/SocialMediaWeakLabeling.iml" filepath="$PROJECT_DIR$/../SocialMediaWeakLabeling/.idea/SocialMediaWeakLabeling.iml" />
+      <module fileurl="file://$USER_HOME$/datasets_code/YFCC100M/.idea/YFCC100M.iml" filepath="$USER_HOME$/datasets_code/YFCC100M/.idea/YFCC100M.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../geoSemantics/.idea/geoSemantics.iml" filepath="$PROJECT_DIR$/../geoSemantics/.idea/geoSemantics.iml" />
     </modules>
   </component>
 </project>

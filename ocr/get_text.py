@@ -46,24 +46,25 @@ def request_ocr(api_key, image_filenames):
     return response
 
 ENDPOINT_URL = 'https://vision.googleapis.com/v1/images:annotate'
-RESULTS_DIR = '../../../datasets/HateSPic/MMHS50K/img_txt/'
+RESULTS_DIR = '../../../datasets/HateSPic/MMHS/img_txt/'
 results = {}
 # makedirs(RESULTS_DIR, exist_ok=True)
 
 api_key = 'AIzaSyB9TigeOiqzneipm-LQJUkHs_6xGd04oiM'
 image_filenames = []
 
-data_path = '../../../datasets/HateSPic/MMHS50K/anns/MMHS50K_GT.json'
-base_path = '../../../datasets/HateSPic/MMHS50K/'
+data_path = '../../../datasets/HateSPic/MMHS/anns/MMHS150K_GT.json'
+base_path = '../../../datasets/HateSPic/MMHS/'
 data = json.load(open(data_path,'r'))
 
 for id,v in data.iteritems():
-    image_filenames.append(base_path + 'img/' + str(id) + '.jpg')
+    image_filenames.append(base_path + 'img_resized/' + str(id) + '.jpg')
 
 
 # I do it image by image to don't fuck indices
 for count, cur_image_filename in enumerate(image_filenames):
     print count
+    img_txt = ""
     try:
         response = request_ocr(api_key, [cur_image_filename])
         if response.status_code != 200 or response.json().get('error'):
@@ -73,9 +74,10 @@ for count, cur_image_filename in enumerate(image_filenames):
                 if len(resp) == 0: continue
                 img_txt = resp['textAnnotations'][0]['description'].replace('\n',' ')
 
-            if len(img_txt) > 3:
+            if len(img_txt) > 4:
                 # save to JSON file
                 save_dict = {'img_text': img_txt}
+                print(img_txt)
                 jpath = join(RESULTS_DIR, basename(cur_image_filename)[:-4] + '.json')
                 with open(jpath, 'w') as f:
                     json.dump(save_dict, f)
