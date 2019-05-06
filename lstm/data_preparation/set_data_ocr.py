@@ -2,12 +2,12 @@ from preprocess_tweets import tweet_preprocessing
 import os
 import json
 
-base_path = '../../../../datasets/HateSPic/MMHS50K/img_txt/'
-out_path = '../../../../datasets/HateSPic/MMHS50K/lstm_data/'
+base_path = '../../../../datasets/HateSPic/MMHS/img_txt/'
+out_path = '../../../../datasets/HateSPic/MMHS/lstm_data/'
 out_file = open(out_path + 'tweets.img_txt', 'w')
 
 for file in os.listdir(base_path):
-    print file
+    print(file)
     img_text = json.load(open(base_path + file))['img_text']
     try:
         text = tweet_preprocessing(img_text.encode('utf-8').replace('\n', ' ').replace('\r', ''))
@@ -20,4 +20,4 @@ for file in os.listdir(base_path):
         print("Error with file: " + file)
         continue
 
-print "DONE"
+print("DONE")

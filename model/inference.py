@@ -6,13 +6,13 @@ import sys
 sys.path.append('../evaluation')
 import evaluate_model
 
-dataset = '../../../datasets/HateSPic/MMHS50K/' # Path to dataset
-split = 'MMHS50K_niggaNigger_lstm_embeddings_test_hate.txt'
+dataset = '../../../datasets/HateSPic/MMHS/' # Path to dataset
+split = 'MMHS_lstm_embeddings_classification/' + 'test_hate.txt'
 
-batch_size = 128
-workers = 6
+batch_size = 64
+workers = 4
 
-model_name = 'MMHS50K_niggaNigger_FCM_TT_epoch_71_ValAcc_56.pth'
+model_name = 'MMHS_classification_CNNinit_SCMSameDim_ALL_epoch_3_ValAcc_62.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -59,4 +59,4 @@ with torch.no_grad():
 
 output_file.close()
 print("Running evaluation on Test set")
-evaluate_model.run_evaluation(model_name)
+evaluate_model.run_evaluation(model_name,'classification')

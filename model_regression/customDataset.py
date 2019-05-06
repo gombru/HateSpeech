@@ -43,7 +43,7 @@ class CustomDataset(Dataset):
         print("Img text embeddings read. Total elements: " + str(len(img_txt_embeddings)))
 
 
-        # Read Hate data
+        # Read data
         for i,line in enumerate(open(root_dir + 'tweet_embeddings/' + split)):
             data = line.split(',')
             self.tweet_ids[i] = data[0]

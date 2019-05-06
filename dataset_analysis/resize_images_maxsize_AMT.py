@@ -11,6 +11,11 @@ maxSize = 400
 
 def resize(im_path):
     try:
+
+        if os.path.exists(im_dest_path + im_path.split('/')[-1]):
+            print("File exists, skipping")
+            return
+
         im = Image.open(im_path)
 
         w = im.size[0]

@@ -53,8 +53,6 @@ model = mymodel.MyModel(gpu=gpu)
 
 # define loss function (criterion) and optimizer
 criterion = nn.CrossEntropyLoss(weight=class_weights).cuda(gpu)
-# criterion = nn.MultiLabelSoftMarginLoss().cuda(gpu) # This is not the loss I want
-# criterion = nn.BCEWithLogitsLoss().cuda(gpu)
 
 # OPTIMIZER
 # ADAM

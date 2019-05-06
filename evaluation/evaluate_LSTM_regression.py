@@ -14,7 +14,7 @@ with open('../../../datasets/HateSPic/MMHS/lstm_scores/'+scores_file+'.txt') as 
 
 # Load test indices
 results = []
-with open('../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/tweets.test') as f:
+with open('../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression_balanced/tweets.test') as f:
     for line in f:
         data = line.split(',')
         try:

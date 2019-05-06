@@ -12,6 +12,7 @@ import random
 caffe.set_device(0)
 caffe.set_mode_gpu()
 
+num_in_out_folder = 100000
 
 white_img_th = 150 # A less permisive text thereshold is applied to them
 extreme_white_img_th = 200 # Dicard all images over this whiteness
@@ -45,6 +46,19 @@ count = 0
 start = time.time()
 dicardedByLSTM = 0
 for img_path in img_paths:
+
+    if os.path.exists(out_dir + img_path.split('/')[-1]) or os.path.exists(discarded_dir + img_path.split('/')[-1]):
+        print("File exists, skipping")
+        continue
+
+    path, dirs, files = next(os.walk(out_json_dir))
+    file_count = len(files)
+    print("Num files in dest dir: " + str(file_count))
+    if file_count == num_in_out_folder:
+        print("File count reached, breaking")
+        break
+
+
 
     try:
 

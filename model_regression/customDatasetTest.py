@@ -23,53 +23,34 @@ class customDatasetTest(Dataset):
         # Count number of elements
         print("Split: " + split)
         num_elements = sum(1 for line in open(root_dir + 'tweet_embeddings/' + split))
-        num_elements += sum(1 for line in open(root_dir + 'tweet_embeddings/' + split.replace('hate','nothate')))
         print("Number of elements in " + split + " (and not hate): " + str(num_elements))
 
         # Initialize containers
         self.tweet_ids = np.empty(num_elements, dtype="S50")
-        self.labels = []
+        self.labels = np.empty(num_elements, dtype=np.float32)
         self.tweets = np.zeros((num_elements, self.hidden_state_dim), dtype=np.float32)
         self.img_texts = np.zeros((num_elements, self.hidden_state_dim), dtype=np.float32)
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS_lstm_embeddings_classification/img_txt.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS_lstm_embeddings_regression/img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
-                embedding[c] = float(data_img_text[c+1])
+                embedding[c] = float(data_img_text[c+2])
             img_txt_embeddings[int(data_img_text[0])] = embedding
         print("Img text embeddings read. Total elements: " + str(len(img_txt_embeddings)))
 
-
-        # Read Hate data
+        # Read data
         for i,line in enumerate(open(root_dir + 'tweet_embeddings/' + split)):
             data = line.split(',')
-            self.tweet_ids[i] = data[0] # id
-            # if 'val' in split:
-            #     print('val')
-            #     self.labels.append(0)
-            # else:
-            self.labels.append(1) # Assign hate label
+            self.tweet_ids[i] = data[0]
+            self.labels[i] = data[1]
             for c in range(self.hidden_state_dim): # Read LSTM hidden state
-                self.tweets[i,c] = float(data[c+1])
+                self.tweets[i,c] = float(data[c+2])
             # Read img_text embedding
             if data[0] in img_txt_embeddings:
                 self.img_texts[i,:] = img_txt_embeddings[data[0]]
-            offset = i + 1
-
-
-        # Read Not Hate data
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/' + split.replace('hate','nothate'))):
-            data = line.split(',')
-            self.tweet_ids[i + offset] = data[0] # id
-            self.labels.append(0) # Assign not hate label
-            for c in range(self.hidden_state_dim): # Read LSTM hidden state
-                self.tweets[i + offset,c] = float(data[c+1])
-            # Read img_text embedding
-            if data[0] in img_txt_embeddings:
-                self.img_texts[i + offset,:] = img_txt_embeddings[data[0]]
 
         print("Data read.")
 
@@ -104,20 +85,8 @@ class customDatasetTest(Dataset):
 
         out_img = np.copy(im_np)
 
-        # Simple Classification (class index)
-        label = torch.from_numpy(np.array([int(self.labels[idx])]))
-        label = label.type(torch.LongTensor)
-
-        # Set text embedding to 0!
-        #self.img_texts[idx] = np.zeros(self.hidden_state_dim)
-        #self.tweets[idx] = np.zeros(self.hidden_state_dim)
-
-        # Set image to 0!
-        #out_img = np.zeros((3, 299, 299), dtype=np.float32)
-
-        # Multilabel / Regression
         img_text = torch.from_numpy(np.array(self.img_texts[idx]))
+        label = torch.from_numpy(np.array(self.labels[idx]))
         tweet = torch.from_numpy(np.array(self.tweets[idx]))
-        # print(out_img.shape)
 
         return self.tweet_ids[idx], torch.from_numpy(out_img), img_text, tweet, label

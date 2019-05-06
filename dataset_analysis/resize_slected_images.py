@@ -6,14 +6,17 @@ import os
 
 images_path = '../../../datasets/HateSPic/MMHS/img_extra/'
 im_dest_path = '../../../datasets/HateSPic/MMHS/img_resized/'
+selected_anns_path = '../../../datasets/HateSPic/AMT/MMHS2/2label_extra/'
 
 minSize = 500
 
-def resize(im_path):
+def resize(json_path):
     try:
+        tweet_id = json_path.split('/')[-1].replace('.json','')
+        im_path = images_path + tweet_id + '.jpg'
 
         if os.path.exists(im_dest_path + im_path.split('/')[-1]):
-            print("File exists, skipping")
+            # print("File exists, skipping")
             return
 
         im = Image.open(im_path)
@@ -39,6 +42,6 @@ def resize(im_path):
 
 if not os.path.exists(im_dest_path):
     os.makedirs(im_dest_path)
-Parallel(n_jobs=8)(delayed(resize)(file) for file in glob.glob(images_path + "/*.jpeg"))
+Parallel(n_jobs=4)(delayed(resize)(file) for file in glob.glob(selected_anns_path + "/*.json"))
 
 print "DONE"

@@ -31,7 +31,7 @@ class MMHS50K(data.Dataset):
         super(MMHS50K, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/", **kwargs):
+    def splits(cls, text_field, label_field, shuffle=True ,root='.',path="../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression_balanced/", **kwargs):
 
         train_examples = cls(text_field, label_field, path=path, split='train', **kwargs).examples
         if shuffle: random.shuffle(train_examples)

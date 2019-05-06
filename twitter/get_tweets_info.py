@@ -12,7 +12,7 @@ from PIL import Image
 
 # -- CONFIG --
 # tweets_data_path = '../../../datasets/HateSPic/twitter/hard/raw/hate_tweets_1.txt'
-tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/MMHS2/tweets_MM_terms_8.txt'
+tweets_data_path = '/home/raulgomez/twitter_data/HateSPic/MMHS2/tweets_MM_terms_29.txt'
 min_text_length = 4
 images_dir = '../../../datasets/HateSPic/MMHS/img_extra/'
 tweets_info_dir = '../../../datasets/HateSPic/MMHS/json_extra/'
@@ -37,7 +37,7 @@ def process_tweet(line):
         try:
             t = json.loads(line)
         except:
-            print "Failed to load tweet json, continuing"
+            print("Failed to load tweet json, continuing")
             return
 
         # c += 1
@@ -58,7 +58,7 @@ def process_tweet(line):
 
         # Discard short tweets
         if len(t['text']) < min_text_length:
-            print "Text too short: " + t['text']
+            print("Text too short: " + t['text'])
             return
 
         # -- FILTER BY IMAGE AND SAVE IMAGES -- discard tweets without image
@@ -82,7 +82,7 @@ def process_tweet(line):
                     image_path = images_dir + '/' + str(t['id']) + ".jpg"
                     # Check if file already exists
                     if os.path.isfile(image_path):
-                        print "Image already exists"
+                        print("Image already exists")
                         return
 
                     # Download image
@@ -93,7 +93,7 @@ def process_tweet(line):
                     except:
                         if os.path.exists(image_path):
                             os.remove(image_path) #Remove the corrupted file
-                        print "Failed downloading image from: " + t['entities']['media'][0]['media_url']
+                        print("Failed downloading image from: " + t['entities']['media'][0]['media_url'])
                         return
 
                     info = {}

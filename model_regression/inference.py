@@ -7,12 +7,12 @@ sys.path.append('../evaluation')
 import evaluate_model
 
 dataset = '../../../datasets/HateSPic/MMHS/' # Path to dataset
-split = 'MMHS_lstm_embeddings_classification/' + 'test_hate.txt'
+split = 'MMHS_lstm_embeddings_regression/' + 'test.txt'
 
 batch_size = 64
 workers = 4
 
-model_name = 'MMHS_classification_CNNinit_SCMSameDim_ALL_epoch_3_ValAcc_62.pth'
+model_name = 'MMHS_regression_FCM_I_epoch_219_ValLoss_0.1.pth'
 model_name = model_name.strip('.pth')
 
 gpus = [0]
@@ -29,7 +29,6 @@ if os.path.isfile(dataset + '/MMCNN_models/' + model_name + '.pth.tar'):
     state_dict = torch.load(dataset + '/MMCNN_models/' + model_name + '.pth.tar', map_location={'cuda:1':'cuda:0', 'cuda:2':'cuda:0', 'cuda:3':'cuda:0'})
 else:
     state_dict = torch.load(dataset + '/MMCNN_models_loss/' + model_name + '.pth.tar', map_location={'cuda:1': 'cuda:0', 'cuda:2': 'cuda:0', 'cuda:3': 'cuda:0'})
-    print("no checkpoint found")
 
 model = mymodel.MyModel()
 model = torch.nn.DataParallel(model, device_ids=gpus).cuda(gpu)
@@ -50,13 +49,12 @@ with torch.no_grad():
         outputs = model(image_var, image_text_var, tweet_var)
 
         for idx,el in enumerate(outputs):
-            topic_probs_str = ''
-            for t in el:
-                topic_probs_str = topic_probs_str + ',' + str(float(t))
-            output_file.write(str(tweet_id[idx]) + ',' + str(int(target[idx])) + topic_probs_str + '\n')
+            class_label = 0
+            if float(target[idx]) > 0.5: class_label = 1
+            output_file.write(str(tweet_id[idx]) + ',' + str(class_label) + ',' + str(float(el)) + '\n')
 
         print(str(i) + ' / ' + str(len(test_loader)))
 
 output_file.close()
 print("Running evaluation on Test set")
-evaluate_model.run_evaluation(model_name)
+evaluate_model.run_evaluation(model_name,'regression')

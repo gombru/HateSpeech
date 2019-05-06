@@ -76,7 +76,7 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
             image_var = torch.autograd.Variable(image)
             image_text_var = torch.autograd.Variable(image_text)
             tweet_var = torch.autograd.Variable(tweet)
-            target_var = torch.autograd.Variable(target).squeeze(1)
+            target_var = torch.autograd.Variable(target).unsqueeze(1)
 
 
             # compute output
@@ -103,10 +103,11 @@ def validate(val_loader, model, criterion, print_freq, plot_data, gpu):
 
 def save_checkpoint(dataset, model, is_best, filename='checkpoint.pth.tar'):
     print("Saving Checkpoint")
-    prefix = 16
-    if '_ValLoss_' in filename:
-        prefix = 30
-    for cur_filename in glob.glob(filename[:-prefix] + '*'):
+    # prefix = 16
+    # if '_ValLoss_' in filename:
+    #     prefix = 30
+    prefix = len(filename.split("epoch")[0])
+    for cur_filename in glob.glob(filename[:prefix] + '*'):
         print(cur_filename)
         os.remove(cur_filename)
     torch.save(model.state_dict(), filename + '.pth.tar')

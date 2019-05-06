@@ -6,7 +6,7 @@ def evaluate(results, model_name):
 
 
     thresholds = np.arange(0, 1, 0.001)
-    # thresholds = np.arange(0.4, 0.44, 0.000001)
+    # thresholds = np.arange(0.4, 0.44, 0.0000001)
 
 
     best_f = 0
@@ -104,7 +104,7 @@ def evaluate(results, model_name):
 
     # Print AUC
     auc = np.trapz(recalls, fpr)
-    print('AUC:', auc)
+    print('AUC:' + str(auc))
 
 
     save_data = {}

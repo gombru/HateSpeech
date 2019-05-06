@@ -34,7 +34,7 @@ class customDatasetTest(Dataset):
 
         # Read image text embeddings
         img_txt_embeddings = {}
-        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS50K_niggaNigger_lstm_embeddings_img_txt.txt')):
+        for i, line in enumerate(open(root_dir + 'tweet_embeddings/MMHS_lstm_embeddings_classification/img_txt.txt')):
             data_img_text = line.split(',')
             embedding = np.zeros(self.hidden_state_dim)
             for c in range(self.hidden_state_dim):
@@ -85,9 +85,9 @@ class customDatasetTest(Dataset):
         try:
             image = Image.open(img_name)
         except:
-            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
-            print("Img file " + img_name + " not found, using hardcoded " + img_name)
-            image = Image.open(img_name)
+            new_img_name = '../../../datasets/HateSPic/MMHS/img_resized/1037385299310112768.jpg'
+            print("Img file " + img_name + " not found, using hardcoded " + new_img_name)
+            image = Image.open(new_img_name)
 
         try:
             image = customTransform.Rescale(image, self.Rescale)
@@ -95,7 +95,7 @@ class customDatasetTest(Dataset):
             im_np = customTransform.PreprocessImage(im_np)
 
         except:
-            img_name = '../../../datasets/HateSPic/MMHS50K/img_resized/1037385299310112768.jpg'
+            img_name = '../../../datasets/HateSPic/MMHS/img_resized/1037385299310112768.jpg'
             print("Error on data aumentation, using hardcoded: " + img_name)
             image = Image.open(img_name)
             image = customTransform.Rescale(image, self.Rescale)

@@ -3,11 +3,9 @@ import json
 import numpy as np
 import os
 
-# ids_file = '../../../datasets/HateSPic/AMT/results/3rdTest_ids_txt_Hate_mm_notHate.txt'
-# ids_file = '../../../datasets/HateSPic/HateSPic/wrong_ids.txt'
+ids_file = '../../../datasets/HateSPic//MMHS/anns/analysis/ids_notHate.txt'
+out_folder = '../../../datasets/HateSPic/MMHS/anns/analysis/ids_notHate/'
 
-ids_file = '../../../datasets/HateSPic/MMHS/anns/analysis/ids_agreement_homo.txt'
-out_folder = '../../../datasets/HateSPic/MMHS/anns/analysis/homo/'
 if not os.path.exists(out_folder):
     os.makedirs(out_folder)
 

@@ -30,9 +30,14 @@ class MMHS50K(data.Dataset):
                     if len(line.split(',')) >= 2:
                         lines.append(line)
 
-            examples += [
-                # Twitter
-                data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]), line.split(',')[0]], fields) for line in lines]
+            if 'img_txt' in split_name:
+                examples += [
+                    # Twitter
+                    data.Example.fromlist([line.split(',')[1], 0.0, line.split(',')[0]], fields) for line in lines]
+            else:
+                examples += [
+                    # Twitter
+                    data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]), line.split(',')[0]], fields) for line in lines]
 
         super(MMHS50K, self).__init__(examples, fields, **kwargs)
 
@@ -51,33 +56,16 @@ class MMHS50K(data.Dataset):
             Remaining keyword arguments: Passed to the splits method of
                 Dataset.
         """
-        path = "../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/" + split_folder + "/"
+        path = "../../../datasets/HateSPic/MMHS/lstm_data/" + split_folder + "/"
         print("Split:  "  + path)
         test_examples = cls(text_field, label_field, id_field, path=path, split_name=split_name, **kwargs).examples
 
-        # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
-        # ANNOTATED
-        # fields = [('text', text_field), ('label', label_field), ('id', id_field)]
-        # train_examples = []
-        # train_path = "../../../datasets/HateSPic/lstm_data/annotated/"
-        # with codecs.open(os.path.join(train_path, 'tweets.hate'), 'r', 'utf8') as f:
-        #     train_examples += [
-        #         data.Example.fromlist([line, 'hate','0'], fields) for line in f]
-        # with codecs.open(os.path.join(train_path, 'tweets.nothate'), 'r', 'utf8') as f:
-        #     train_examples += [
-        #         data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
-        # with codecs.open(os.path.join(train_path, 'val_tweets.hate'), 'r', 'utf8') as f:
-        #     train_examples += [
-        #         data.Example.fromlist([line, 'hate','0'], fields) for line in f]
-        # with codecs.open(os.path.join(train_path, 'val_tweets.nothate'), 'r', 'utf8') as f:
-        #     train_examples += [
-        #         data.Example.fromlist([line, 'nothate','0'], fields) for line in f]
 
         # LOAD TRAIN VOCAB SINCE I NEED IT TO RUN THE MODEL
         # MMHS10K
         fields = [('text', text_field), ('label', label_field), ('id', id_field)]
         train_examples = []
-        train_path = "../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression/"
+        train_path = "../../../datasets/HateSPic/MMHS/lstm_data/lstm_data_50k_3workers_regression_balanced/"
         with codecs.open(os.path.join(train_path, 'tweets.train'), 'r', 'utf8') as f:
             train_examples += [
                 data.Example.fromlist([line.split(',')[1], float(line.split(',')[2]),'0'], fields) for line in f]

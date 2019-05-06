@@ -141,7 +141,7 @@ def train_epoch(model, train_iter, loss_function, optimizer, text_field, label_f
         model.zero_grad()
         loss = loss_function(pred, regression_labels.cuda())
         avg_loss += loss.data[0]
-        count += 1
+        count += model.batch_size
         if count % 1000 == 0:
             print('epoch: %d iterations: %d loss :%g' % (i, count*model.batch_size, loss.data[0]))
         loss.backward()

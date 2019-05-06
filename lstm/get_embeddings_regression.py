@@ -18,7 +18,7 @@ torch.manual_seed(1)
 random.seed(1)
 torch.cuda.set_device(0)
 
-target = 'test'
+target = 'img_txt'
 split_name = 'tweets.' + target
 model_name = 'MMHS_regression_hidden_150_embedding_100_best_model'
 out_file_name = 'tweet_embeddings/MMHS_lstm_embeddings_regression/' + target
@@ -98,6 +98,10 @@ def evaluate(model, split_iter):
         cur_batch_size = label.__len__()
         model.batch_size = cur_batch_size
 
+        regression_labels = torch.zeros([model.batch_size,1], dtype=torch.float32)
+        for c in range(0,model.batch_size):
+            regression_labels[c] = batch.dataset.examples[count+c].label
+
         model.hidden = model.init_hidden()  # detaching it from its history on the last instance.
         pred, hidden = model(sent.cuda())
 
@@ -107,9 +111,9 @@ def evaluate(model, split_iter):
             id = batch.dataset.examples[count + i].id
             embeddingString = ""
             for d in el_embedding: embeddingString += ',' + str(d.item())
-            result_string = id + embeddingString + '\n'
+            result_string = id + ',' + str(float(regression_labels[i])) + embeddingString + '\n'
             out_file.write(result_string)
-        count+= cur_batch_size
+        count += cur_batch_size
 
     print("Writing results")
     out_file.close()

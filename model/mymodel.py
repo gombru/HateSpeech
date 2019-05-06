@@ -15,14 +15,14 @@ class MyModel(nn.Module):
         c['lstm_hidden_state_dim'] = 150
         c['gpu'] = gpu
         self.cnn = myinceptionv3.my_inception_v3(pretrained=True, aux_logits=False)
-        self.mm = testCNN(c)
+        self.mm = SCM_SameDim(c)
         self.initialize_weights()
 
     def forward(self, image, img_text, tweet):
 
         i = self.cnn(image) # * 0 # CNN
-        it = img_text  * 0  # Img Text Input
-        tt = tweet  * 0   # Tweet Text Input
+        it = img_text # * 0  # Img Text Input
+        tt = tweet # * 0   # Tweet Text Input
         x = self.mm(i, it, tt) # Multimodal net
         return x
 
@@ -134,7 +134,7 @@ class SCM(nn.Module):
         super(SCM, self).__init__()
 
         # Create the linear layers that will process both the img and the txt
-        self.MM_InceptionE_1 = InceptionE(2148)
+        self.MM_InceptionE_1 = InceptionE(2048 + 2*c['lstm_hidden_state_dim'])
         self.MM_InceptionE_2 = InceptionE(2048)
         self.fc1_mm = BasicFC(2048, 1024)
         self.fc2_mm = BasicFC(1024, 512)

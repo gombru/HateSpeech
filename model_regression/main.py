@@ -123,7 +123,7 @@ _, ax1 = subplots()
 ax2 = ax1.twinx()
 ax1.set_xlabel('epoch ' + " (GPU " + str(gpu) +") ")
 ax1.set_ylabel('train loss (r), val loss (y)')
-ax1.set_ylim([0.3, 0.8])
+# ax1.set_ylim([0.3, 0.8])
 
 
 for epoch in range(start_epoch, epochs):
@@ -140,10 +140,11 @@ for epoch in range(start_epoch, epochs):
     # Save checkpoint by loss
     is_best = plot_data['val_loss'][epoch] < best_loss
     if is_best and epoch != 0:
+        best_epoch = epoch
         print("New best model by loss. Loss = " + str(plot_data['val_loss'][epoch]))
         ax1.set_xlabel('epoch ' + ' / GPU: ' + str(gpu) + ' / Best epoch: ' + str(best_epoch) + ' with Val Loss: ' + str(plot_data['val_loss'][epoch]))
         best_loss = plot_data['val_loss'][epoch]
-        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/MMCNN_models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValAcc_' + str(int(plot_data['val_acc_avg'][epoch])) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
+        t.save_checkpoint(dataset, model, is_best, filename = dataset +'/MMCNN_models_loss/' + training_id + '_epoch_' + str(epoch) + '_ValLoss_' + str(round(plot_data['val_loss'][epoch],2)))
 
     if plot:
         ax1.plot(it_axes[0:epoch], plot_data['train_loss'][0:epoch], 'r')
